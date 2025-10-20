@@ -1,133 +1,10 @@
+// app/api/generate-cover-letter/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { InferenceClient } from "@huggingface/inference";
 
-// Helper: Extract text from PDF
-async function extractTextFromPDF(file: File): Promise<string> {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const pdfParse = (await import("pdf-parse")).default;
-    const data = await pdfParse(buffer);
-    const extractedText = data.text.trim();
-
-    if (!extractedText) throw new Error("No text found in PDF");
-
-    console.log(
-      `✅ Extracted ${extractedText.length} characters from ${file.name}`
-    );
-    return extractedText;
-  } catch (error) {
-    console.error("❌ Error extracting text from PDF:", error);
-    const fileSize = (file.size / 1024).toFixed(1);
-    return `PDF Resume: ${file.name} (${fileSize} KB)
-
-PDF text extraction failed. Possible reasons:
-- Image-based or scanned document
-- Encrypted or protected PDF
-- Complex layout
-
-Please convert it to plain text for best results.`;
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
-
-    const formData = await request.formData();
-    const resumeFile = formData.get("resume") as File;
-    const jobDescription = formData.get("jobDescription") as string;
-
-    if (!resumeFile || !jobDescription) {
-      return NextResponse.json(
-        { error: "Resume and job description are required." },
-        { status: 400 }
-      );
-    }
-
-    // Extract resume text
-    let resumeText = "";
-    if (resumeFile.type === "text/plain") {
-      resumeText = await resumeFile.text();
-    } else if (resumeFile.type === "application/pdf") {
-      resumeText = await extractTextFromPDF(resumeFile);
-    } else {
-      return NextResponse.json(
-        { error: "Unsupported file type. Please upload a PDF or text file." },
-        { status: 400 }
-      );
-    }
-
-    // Clean and limit resume text length
-    const cleanResume = resumeText.replace(/\s+/g, " ").trim().slice(0, 5000);
-
-    // Build AI prompt
-    const prompt = `You are an expert career counselor and cover letter writer. Create a professional, personalized cover letter based on the following resume and job description.
-
-RESUME:
-${cleanResume}
-
-JOB DESCRIPTION:
-${jobDescription}
-
-INSTRUCTIONS:
-1. Write a compelling 3-4 paragraph cover letter tailored to the role.
-2. Use examples from the resume that match job requirements.
-3. Show enthusiasm and professionalism.
-4. Address it to "Hiring Manager" unless a specific name is given.
-5. End with a confident closing.
-
-COVER LETTER:`;
-
-    // --- HUGGING FACE CALL ---
-    const apiKey = process.env.HUGGINGFACE_API_KEY;
-
-    if (!apiKey || apiKey === "your_api_key_here") {
-      console.log(
-        "⚠️ No valid Hugging Face API key found, using fallback generator"
-      );
-      const fallback = generateFallbackCoverLetter(cleanResume, jobDescription);
-      return NextResponse.json({ coverLetter: fallback });
-    }
-
-    const hfResponse = await client.chatCompletion({
-      provider: "hyperbolic",
-      model: "meta-llama/llama-3.1-8b-instruct",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
-
-    const raw_message =
-      hfResponse.choices?.[0]?.message?.content || "No response";
-
-    const message = raw_message
-      .replace(/<\|.*?\|>/g, "")
-      // remove “analysis” or “final” headers if present
-      .replace(/^\s*analysis\s*/i, "")
-      .replace(/^\s*final\s*/i, "")
-      // collapse extra whitespace
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-
-    return NextResponse.json({ message });
-  } catch (error) {
-    console.error("💥 Error generating cover letter:", error);
-    return NextResponse.json(
-      {
-        coverLetter:
-          "An error occurred while generating the cover letter. Please try again later.",
-      },
-      { status: 500 }
-    );
-  }
-}
+// Force Node runtime
+export const runtime = "nodejs";
 
 // --- FALLBACK GENERATOR ---
-
 function generateFallbackCoverLetter(
   resume: string,
   jobDescription: string
@@ -151,4 +28,106 @@ ${nameLine}${email ? `\n${email}` : ""}`;
 function extractCompanyName(text: string): string {
   const match = text.match(/(?:at|for|with)\s+([A-Z][a-zA-Z\s&]+)/i);
   return match ? match[1].trim() : "your company";
+}
+
+// --- PDF Extraction ---
+async function extractTextFromPDF(file: File): Promise<string> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Lazy load pdf-parse to reduce bundle size
+    const pdfParse = (await import("pdf-parse")).default;
+    const data = await pdfParse(buffer);
+    const text = data.text.trim();
+
+    if (!text) throw new Error("No text found in PDF");
+
+    console.log(`✅ Extracted ${text.length} characters from ${file.name}`);
+    return text;
+  } catch (err) {
+    console.error("❌ PDF extraction error:", err);
+    return `PDF Resume: ${file.name} (size ${(file.size / 1024).toFixed(
+      1
+    )} KB)\n\nPDF text extraction failed. Please convert to plain text.`;
+  }
+}
+
+// --- POST Handler ---
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const resumeFile = formData.get("resume") as File;
+    const jobDescription = formData.get("jobDescription") as string;
+
+    if (!resumeFile || !jobDescription) {
+      return NextResponse.json(
+        { error: "Resume and job description are required." },
+        { status: 400 }
+      );
+    }
+
+    // Extract resume text
+    let resumeText = "";
+    if (resumeFile.type === "text/plain") {
+      resumeText = await resumeFile.text();
+    } else if (resumeFile.type === "application/pdf") {
+      resumeText = await extractTextFromPDF(resumeFile);
+    } else {
+      return NextResponse.json(
+        { error: "Unsupported file type. Upload PDF or text." },
+        { status: 400 }
+      );
+    }
+
+    const cleanResume = resumeText.replace(/\s+/g, " ").trim().slice(0, 5000);
+
+    // Build AI prompt
+    const prompt = `You are an expert career counselor and cover letter writer. Create a professional cover letter based on the resume and job description below.
+
+RESUME:
+${cleanResume}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+COVER LETTER:`;
+
+    const apiKey = process.env.HUGGINGFACE_API_KEY;
+
+    if (!apiKey || apiKey === "your_api_key_here") {
+      console.log("⚠️ No Hugging Face API key, using fallback generator");
+      const fallback = generateFallbackCoverLetter(cleanResume, jobDescription);
+      return NextResponse.json({ coverLetter: fallback });
+    }
+
+    // Lazy load Hugging Face client to reduce bundle size
+    const { InferenceClient } = await import("@huggingface/inference");
+    const client = new InferenceClient(apiKey);
+
+    // Make Hugging Face API call
+    const hfResponse = await client.chatCompletion({
+      provider: "hyperbolic",
+      model: "meta-llama/llama-3.1-8b-instruct",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const rawMessage =
+      hfResponse.choices?.[0]?.message?.content || "No response";
+    const message = rawMessage
+      .replace(/<\|.*?\|>/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
+    return NextResponse.json({ coverLetter: message });
+  } catch (error) {
+    console.error("💥 Error generating cover letter:", error);
+    return NextResponse.json(
+      {
+        coverLetter:
+          "An error occurred while generating the cover letter. Please try again later.",
+      },
+      { status: 500 }
+    );
+  }
 }
