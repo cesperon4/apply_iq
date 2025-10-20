@@ -1,0 +1,154 @@
+import { NextRequest, NextResponse } from "next/server";
+import { InferenceClient } from "@huggingface/inference";
+
+// Helper: Extract text from PDF
+async function extractTextFromPDF(file: File): Promise<string> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const pdfParse = (await import("pdf-parse")).default;
+    const data = await pdfParse(buffer);
+    const extractedText = data.text.trim();
+
+    if (!extractedText) throw new Error("No text found in PDF");
+
+    console.log(
+      `✅ Extracted ${extractedText.length} characters from ${file.name}`
+    );
+    return extractedText;
+  } catch (error) {
+    console.error("❌ Error extracting text from PDF:", error);
+    const fileSize = (file.size / 1024).toFixed(1);
+    return `PDF Resume: ${file.name} (${fileSize} KB)
+
+PDF text extraction failed. Possible reasons:
+- Image-based or scanned document
+- Encrypted or protected PDF
+- Complex layout
+
+Please convert it to plain text for best results.`;
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
+
+    const formData = await request.formData();
+    const resumeFile = formData.get("resume") as File;
+    const jobDescription = formData.get("jobDescription") as string;
+
+    if (!resumeFile || !jobDescription) {
+      return NextResponse.json(
+        { error: "Resume and job description are required." },
+        { status: 400 }
+      );
+    }
+
+    // Extract resume text
+    let resumeText = "";
+    if (resumeFile.type === "text/plain") {
+      resumeText = await resumeFile.text();
+    } else if (resumeFile.type === "application/pdf") {
+      resumeText = await extractTextFromPDF(resumeFile);
+    } else {
+      return NextResponse.json(
+        { error: "Unsupported file type. Please upload a PDF or text file." },
+        { status: 400 }
+      );
+    }
+
+    // Clean and limit resume text length
+    const cleanResume = resumeText.replace(/\s+/g, " ").trim().slice(0, 5000);
+
+    // Build AI prompt
+    const prompt = `You are an expert career counselor and cover letter writer. Create a professional, personalized cover letter based on the following resume and job description.
+
+RESUME:
+${cleanResume}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+INSTRUCTIONS:
+1. Write a compelling 3-4 paragraph cover letter tailored to the role.
+2. Use examples from the resume that match job requirements.
+3. Show enthusiasm and professionalism.
+4. Address it to "Hiring Manager" unless a specific name is given.
+5. End with a confident closing.
+
+COVER LETTER:`;
+
+    // --- HUGGING FACE CALL ---
+    const apiKey = process.env.HUGGINGFACE_API_KEY;
+
+    if (!apiKey || apiKey === "your_api_key_here") {
+      console.log(
+        "⚠️ No valid Hugging Face API key found, using fallback generator"
+      );
+      const fallback = generateFallbackCoverLetter(cleanResume, jobDescription);
+      return NextResponse.json({ coverLetter: fallback });
+    }
+
+    const hfResponse = await client.chatCompletion({
+      provider: "hyperbolic",
+      model: "meta-llama/llama-3.1-8b-instruct",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const raw_message =
+      hfResponse.choices?.[0]?.message?.content || "No response";
+
+    const message = raw_message
+      .replace(/<\|.*?\|>/g, "")
+      // remove “analysis” or “final” headers if present
+      .replace(/^\s*analysis\s*/i, "")
+      .replace(/^\s*final\s*/i, "")
+      // collapse extra whitespace
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
+    return NextResponse.json({ message });
+  } catch (error) {
+    console.error("💥 Error generating cover letter:", error);
+    return NextResponse.json(
+      {
+        coverLetter:
+          "An error occurred while generating the cover letter. Please try again later.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// --- FALLBACK GENERATOR ---
+
+function generateFallbackCoverLetter(
+  resume: string,
+  jobDescription: string
+): string {
+  const nameLine = resume.split("\n")[0] || "Dear Hiring Manager";
+  const email = resume.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i)?.[0];
+  const company = extractCompanyName(jobDescription);
+
+  return `Dear Hiring Manager,
+
+I am excited to apply for the position at ${company}. My background and skills outlined in my resume demonstrate a strong fit for this opportunity. I am confident that my experience will allow me to make an immediate and valuable contribution to your team.
+
+I am particularly drawn to ${company} because of its reputation for excellence and commitment to innovation. I would welcome the chance to bring my expertise and enthusiasm to this role.
+
+Thank you for considering my application. I look forward to the opportunity to speak with you further.
+
+Sincerely,
+${nameLine}${email ? `\n${email}` : ""}`;
+}
+
+function extractCompanyName(text: string): string {
+  const match = text.match(/(?:at|for|with)\s+([A-Z][a-zA-Z\s&]+)/i);
+  return match ? match[1].trim() : "your company";
+}
