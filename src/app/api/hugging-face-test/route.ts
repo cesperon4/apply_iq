@@ -3,6 +3,7 @@ import { InferenceClient } from "@huggingface/inference";
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("req", req);
     const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
     const chatCompletion = await client.chatCompletion({
       provider: "hyperbolic",
