@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Clean and limit resume text length
-    const cleanResume = resumeText.replace(/\s+/g, " ").trim().slice(0, 5000);
+    const cleanResume = resumeText.replace(/\s+/g, " ").trim();
 
     // Build AI prompt
     const prompt = `You are an expert career counselor and cover letter writer. Create a professional, personalized cover letter based on the following resume and job description.
@@ -109,12 +109,12 @@ COVER LETTER:`;
 
     const message = rawMessage
       .replace(/<\|.*?\|>/g, "")
-      // remove “analysis” or “final” headers if present
       .replace(/^\s*analysis\s*/i, "")
       .replace(/^\s*final\s*/i, "")
-      // collapse extra whitespace
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
+      // split into paragraphs
+      .split(/\n{2,}/)
+      .map((para) => `<p>${para.trim()}</p>`)
+      .join("");
 
     return NextResponse.json({ message });
   } catch (error) {

@@ -10,22 +10,22 @@ import "react-quill-new/dist/quill.snow.css"; // ✅ import it here instead
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
-interface CoverLetterDisplayProps {
-  coverLetter: string;
-  setCoverLetter: React.Dispatch<React.SetStateAction<string>>;
-  isGenerating: boolean;
+interface AnswerDisplayProps {
+  jobAnswer: string;
+  setJobAnswer: React.Dispatch<React.SetStateAction<string>>;
+  isJobAnswerGenerating: boolean;
 }
 
-export function CoverLetterDisplay({
-  coverLetter,
-  isGenerating,
-  setCoverLetter,
-}: CoverLetterDisplayProps) {
+export function AnswerDisplay({
+  jobAnswer,
+  isJobAnswerGenerating,
+  setJobAnswer,
+}: AnswerDisplayProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(coverLetter);
+      await navigator.clipboard.writeText(jobAnswer);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -132,7 +132,7 @@ export function CoverLetterDisplay({
             }),
             new Paragraph({}),
             // Convert HTML cover letter to DOCX paragraphs
-            ...parseHtmlToDocxParagraphs(coverLetter),
+            ...parseHtmlToDocxParagraphs(jobAnswer),
           ],
         },
       ],
@@ -150,7 +150,7 @@ export function CoverLetterDisplay({
           Generated Cover Letter
         </h2>
 
-        {coverLetter && !isGenerating && (
+        {jobAnswer && !isJobAnswerGenerating && (
           <div className="flex gap-2 text-gray-700">
             <button
               onClick={handleCopy}
@@ -171,17 +171,17 @@ export function CoverLetterDisplay({
       </div>
 
       <div className="overflow-y-auto">
-        {isGenerating ? (
+        {isJobAnswerGenerating ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <Loader2 className="w-8 h-8 animate-spin mb-4" />
             <p>Generating your personalized cover letter...</p>
             <p className="text-sm mt-2">This may take a few moments</p>
           </div>
-        ) : coverLetter ? (
+        ) : jobAnswer ? (
           <div className="prose prose-sm max-w-none">
             <ReactQuill
-              value={coverLetter}
-              onChange={setCoverLetter}
+              value={jobAnswer}
+              onChange={setJobAnswer}
               className=" text-gray-700"
               placeholder="Edit your cover letter..."
               modules={{
