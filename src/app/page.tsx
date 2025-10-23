@@ -1,87 +1,38 @@
 "use client";
+import React, { useState } from "react";
 
-import { useState } from "react";
 import { FileUpload } from "@/components/FileUpload";
 import { JobDescriptionInput } from "@/components/JobDescriptionInput";
 import { JobQuestionInput } from "@/components/JobQuestionInput";
-import { CoverLetterDisplay } from "@/components/CoverLetterDisplay";
 import { Header } from "@/components/Header";
-import { AnswerDisplay } from "@/components/AnswerDisplay";
 
+import { GeneratedResponseDisplay } from "@/components/GeneratedResponseDisplay";
+
+import { useGenerate } from "@/hooks/useGenerate";
+import { useCoverLetter } from "@/hooks/useCoverLetter";
+
+import { useDataContext } from "@/context/DataContext";
 export default function Home() {
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [jobDescription, setJobDescription] = useState<string>("");
-  const [jobAnswer, setJobAnswer] = useState<string>("");
-  const [jobQuestion, setJobQuestion] = useState<string>("");
-  const [coverLetter, setCoverLetter] = useState<string>("");
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [isJobAnswerGenerating, setIsJobAnswerGenerating] =
-    useState<boolean>(false);
+  //hooks
+  const {
+    coverLetter,
+    setCoverLetter,
+    handleGenerateCoverLetter,
+    isGenerating,
+  } = useCoverLetter();
 
-  const handleGenerateCoverLetter = async () => {
-    if (!resumeFile || !jobDescription) {
-      alert("Please upload your resume and enter a job description.");
-      return;
-    }
+  const {
+    generatedAnswer,
+    setGeneratedAnswer,
+    handleGenerateAnswer,
+    isAnswerGenerating,
+    question,
+    setQuestion,
+  } = useGenerate();
 
-    setIsGenerating(true);
-    try {
-      const formData = new FormData();
-      formData.append("resume", resumeFile);
-      formData.append("jobDescription", jobDescription);
-      const response = await fetch("/api/generate-cover-letter", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate cover letter");
-      }
-
-      const data = await response.json();
-      setCoverLetter(data.message);
-    } catch (error) {
-      console.error("Error generating cover letter:", error);
-      alert("Failed to generate cover letter. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleGenerateAnswer = async () => {
-    if (!resumeFile || !jobDescription || !jobQuestion) {
-      alert(
-        "Please upload your resume and enter a job description along with your question"
-      );
-      return;
-    }
-
-    setIsJobAnswerGenerating(true);
-    try {
-      const formData = new FormData();
-      formData.append("resume", resumeFile);
-      formData.append("jobDescription", jobDescription);
-      formData.append("jobQuestion", jobQuestion);
-
-      const response = await fetch("/api/generate-answer", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate cover letter");
-      }
-
-      const data = await response.json();
-
-      setJobAnswer(data.message);
-    } catch (error) {
-      console.error("Error generating cover letter:", error);
-      alert("Failed to generate cover letter. Please try again.");
-    } finally {
-      setIsJobAnswerGenerating(false);
-    }
-  };
+  //contexts
+  const { resume, jobDescription, setResume, setJobDescription } =
+    useDataContext();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -100,14 +51,14 @@ export default function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <div className="space-y-6">
-            <FileUpload onResumeExtracted={setResumeFile} />
+            <FileUpload onResumeExtracted={setResume} />
             <JobDescriptionInput
               value={jobDescription}
               onChange={setJobDescription}
             />
             <button
               onClick={handleGenerateCoverLetter}
-              disabled={isGenerating || !resumeFile || !jobDescription}
+              disabled={isGenerating || !resume || !jobDescription}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isGenerating ? (
@@ -122,23 +73,24 @@ export default function Home() {
           </div>
 
           <div>
-            <CoverLetterDisplay
-              coverLetter={coverLetter}
-              setCoverLetter={setCoverLetter}
-              isGenerating={isGenerating}
+            <GeneratedResponseDisplay
+              generatedResponse={coverLetter}
+              setGeneratedResponse={setCoverLetter}
+              isResponseGenerating={isGenerating}
+              type={"Cover Letter"}
             />
           </div>
 
           <div className="flex flex-col  gap-6">
-            <JobQuestionInput value={jobQuestion} onChange={setJobQuestion} />
+            <JobQuestionInput value={question} onChange={setQuestion} />
             <button
               onClick={() => {
                 handleGenerateAnswer();
               }}
-              disabled={isGenerating || !resumeFile || !jobDescription}
+              disabled={isAnswerGenerating || !resume || !jobDescription}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
-              {isGenerating ? (
+              {isAnswerGenerating ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   Generating Answer...
@@ -149,10 +101,11 @@ export default function Home() {
             </button>
           </div>
           <div className="bg-white">
-            <AnswerDisplay
-              jobAnswer={jobAnswer}
-              setJobAnswer={setJobAnswer}
-              isJobAnswerGenerating={isJobAnswerGenerating}
+            <GeneratedResponseDisplay
+              generatedResponse={generatedAnswer}
+              setGeneratedResponse={setGeneratedAnswer}
+              isResponseGenerating={isAnswerGenerating}
+              type={"Response"}
             />
           </div>
         </div>

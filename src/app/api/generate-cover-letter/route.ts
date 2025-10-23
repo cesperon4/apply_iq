@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { InferenceClient } from "@huggingface/inference";
+import { coverLetterPrompt } from "@/lib/prompts/cover-letter-prompt";
 
 // Ensure this runs in Node.js (not Edge)
 export const runtime = "nodejs";
@@ -24,12 +25,12 @@ async function extractTextFromPDF(file: File): Promise<string> {
     const fileSize = (file.size / 1024).toFixed(1);
     return `PDF Resume: ${file.name} (${fileSize} KB)
 
-PDF text extraction failed. Possible reasons:
-- Image-based or scanned document
-- Encrypted or protected PDF
-- Complex layout
+      PDF text extraction failed. Possible reasons:
+      - Image-based or scanned document
+      - Encrypted or protected PDF
+      - Complex layout
 
-Please convert it to plain text for best results.`;
+      Please convert it to plain text for best results.`;
   }
 }
 
@@ -65,22 +66,7 @@ export async function POST(request: NextRequest) {
     const cleanResume = resumeText.replace(/\s+/g, " ").trim();
 
     // Build AI prompt
-    const prompt = `You are an expert career counselor and cover letter writer. Create a professional, personalized cover letter based on the following resume and job description.
-
-RESUME:
-${cleanResume}
-
-JOB DESCRIPTION:
-${jobDescription}
-
-INSTRUCTIONS:
-1. Write a compelling 3-4 paragraph cover letter tailored to the role.
-2. Use examples from the resume that match job requirements.
-3. Show enthusiasm and professionalism.
-4. Address it to "Hiring Manager" unless a specific name is given.
-5. End with a confident closing.
-
-COVER LETTER:`;
+    const prompt = coverLetterPrompt({ resume: cleanResume, jobDescription });
 
     // --- HUGGING FACE CALL ---
     const apiKey = process.env.HUGGINGFACE_API_KEY;
@@ -102,6 +88,8 @@ COVER LETTER:`;
           content: prompt,
         },
       ],
+      top_p: 0.9,
+      top_k: 50,
     });
 
     const rawMessage =

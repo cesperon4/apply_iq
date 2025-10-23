@@ -10,22 +10,24 @@ import "react-quill-new/dist/quill.snow.css"; // ✅ import it here instead
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
-interface AnswerDisplayProps {
-  generatedAnswer: string;
-  setGeneratedAnswer: React.Dispatch<React.SetStateAction<string>>;
-  isAnswerGenerating: boolean;
+interface GeneratedResponseProps {
+  generatedResponse: string;
+  setGeneratedResponse: React.Dispatch<React.SetStateAction<string>>;
+  isResponseGenerating: boolean;
+  type: string;
 }
 
-export function AnswerDisplay({
-  generatedAnswer,
-  isAnswerGenerating,
-  setGeneratedAnswer,
-}: AnswerDisplayProps) {
+export function GeneratedResponseDisplay({
+  generatedResponse,
+  isResponseGenerating,
+  setGeneratedResponse,
+  type,
+}: GeneratedResponseProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(generatedAnswer);
+      await navigator.clipboard.writeText(generatedResponse);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -132,7 +134,7 @@ export function AnswerDisplay({
             }),
             new Paragraph({}),
             // Convert HTML cover letter to DOCX paragraphs
-            ...parseHtmlToDocxParagraphs(generatedAnswer),
+            ...parseHtmlToDocxParagraphs(generatedResponse),
           ],
         },
       ],
@@ -147,10 +149,10 @@ export function AnswerDisplay({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          Generated Cover Letter
+          {`Generated ${type}`}
         </h2>
 
-        {generatedAnswer && !isAnswerGenerating && (
+        {generatedResponse && !isResponseGenerating && (
           <div className="flex gap-2 text-gray-700">
             <button
               onClick={handleCopy}
@@ -171,17 +173,17 @@ export function AnswerDisplay({
       </div>
 
       <div className="overflow-y-auto">
-        {isAnswerGenerating ? (
+        {isResponseGenerating ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <Loader2 className="w-8 h-8 animate-spin mb-4" />
-            <p>Generating your personalized cover letter...</p>
+            <p>{`Generating your personalized ${type.toLowerCase()} letter...`}</p>
             <p className="text-sm mt-2">This may take a few moments</p>
           </div>
-        ) : generatedAnswer ? (
+        ) : generatedResponse ? (
           <div className="prose prose-sm max-w-none">
             <ReactQuill
-              value={generatedAnswer}
-              onChange={setGeneratedAnswer}
+              value={generatedResponse}
+              onChange={setGeneratedResponse}
               className=" text-gray-700"
               placeholder="Edit your cover letter..."
               modules={{
@@ -199,12 +201,14 @@ export function AnswerDisplay({
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <FileText className="w-16 h-16 mb-4" />
             <p className="text-lg font-medium">
-              Your cover letter will appear here
+              {`Your ${type.toLocaleLowerCase()} letter will appear here`}
             </p>
-            <p className="text-sm mt-2 text-center">
-              Upload your resume and enter a job description, then click
-              &ldquo;Generate Cover Letter&rdquo;
-            </p>
+            {type === "Cover Letter" && (
+              <p className="text-sm mt-2 text-center">
+                Upload your resume and enter a job description, then click
+                &ldquo;Generate Cover Letter&rdquo;
+              </p>
+            )}
           </div>
         )}
       </div>

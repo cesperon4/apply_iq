@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { InferenceClient } from "@huggingface/inference";
+import { generateAnswerPrompt } from "@/lib/prompts/generate-answer-prompt";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,23 +13,11 @@ export async function POST(request: NextRequest) {
     const resumeText = await resume.text();
     const cleanResume = resumeText.replace(/\s+/g, " ").trim();
 
-    const prompt = `You are an expert career counselor and understand exactly what tech companies are looking for when it comes to application questions asked.
-  use the provided resume, job description along with the specific question being asked to create a short and concise answer that will attract a hiring managers
-  interest.
-  
-  RESUME: ${cleanResume}
-
-  JOB DESCRIPTION: ${jobDescription}
-
-  Question: ${question}
-
-  INSTRUCTIONS:
-  1. Write a short and concise answer to the question asked utilizing information from the resume and job description.
-  2. Show enthusiasm and professionalism.
-  3. Highlight resume experience where you see fit.
-  4. Focus on experience from Wooard & Currant and not Pathloom.
-  4. Please make sure your reply is in a format that is ready to copy and paste into application, excluding any irrelevant text.
-  `;
+    const prompt = generateAnswerPrompt({
+      resume: cleanResume,
+      jobDescription,
+      question,
+    });
 
     const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
 
@@ -41,14 +30,12 @@ export async function POST(request: NextRequest) {
           content: prompt,
         },
       ],
+      top_p: 0.9,
+      top_k: 50,
     });
-
-    console.log("hfResponse: ", hfResponse);
 
     const rawMessage =
       hfResponse.choices?.[0]?.message?.content || "No response";
-
-    console.log("raw message: ", rawMessage);
 
     const message = rawMessage
       .replace(/<\|.*?\|>/g, "")
@@ -58,8 +45,6 @@ export async function POST(request: NextRequest) {
       .split(/\n{2,}/)
       .map((para) => `<p>${para.trim()}</p>`)
       .join("");
-
-    console.log("job answer: ", message);
 
     return NextResponse.json({ message });
   } catch (error) {
