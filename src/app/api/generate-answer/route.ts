@@ -8,7 +8,10 @@ export async function POST(request: NextRequest) {
     const resume = formData.get("resume") as File;
     const jobDescription = formData.get("jobDescription") as string;
     const question = formData.get("jobQuestion") as string;
-    if (!resume || !question) return "Resume and question are required";
+    if (!resume || !question)
+      return NextResponse.json({
+        coverLetter: "Resume and question are required",
+      });
 
     const resumeText = await resume.text();
     const cleanResume = resumeText.replace(/\s+/g, " ").trim();

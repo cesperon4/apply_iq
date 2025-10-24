@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 
 import { FileUpload } from "@/components/FileUpload";
 import { JobDescriptionInput } from "@/components/JobDescriptionInput";
