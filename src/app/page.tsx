@@ -2,11 +2,12 @@
 import React from "react";
 
 import { FileUpload } from "@/components/FileUpload";
-import { JobDescriptionInput } from "@/components/JobDescriptionInput";
-import { JobQuestionInput } from "@/components/JobQuestionInput";
+// import { JobDescriptionInput } from "@/components/JobDescriptionInput";
+// import { JobQuestionInput } from "@/components/JobQuestionInput";
 import { Header } from "@/components/Header";
-
+import { LinkDisplay } from "@/components/LinkDisplay";
 import { GeneratedResponseDisplay } from "@/components/GeneratedResponseDisplay";
+import { DescriptionInput } from "@/components/DescriptionInput";
 
 import { useGenerate } from "@/hooks/useGenerate";
 import { useCoverLetter } from "@/hooks/useCoverLetter";
@@ -31,8 +32,14 @@ export default function Home() {
   } = useGenerate();
 
   //contexts
-  const { resume, jobDescription, setResume, setJobDescription } =
-    useDataContext();
+  const {
+    resume,
+    jobDescription,
+    setResume,
+    setJobDescription,
+    projectsDescription,
+    setProjectsDescription,
+  } = useDataContext();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -47,14 +54,24 @@ export default function Home() {
             personalized cover letter that highlights your relevant experience
             and skills.
           </p>
+
+          <div className="grid grid-cols-1 gap-8 mt-8">
+            <LinkDisplay />
+            <DescriptionInput
+              value={projectsDescription}
+              onChange={setProjectsDescription}
+              title={"Projects Description"}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <div className="space-y-6">
             <FileUpload onResumeExtracted={setResume} />
-            <JobDescriptionInput
+            <DescriptionInput
               value={jobDescription}
               onChange={setJobDescription}
+              title={"Job Description"}
             />
             <button
               onClick={handleGenerateCoverLetter}
@@ -82,7 +99,11 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col  gap-6">
-            <JobQuestionInput value={question} onChange={setQuestion} />
+            <DescriptionInput
+              value={question}
+              onChange={setQuestion}
+              title={"Job Question"}
+            />
             <button
               onClick={() => {
                 handleGenerateAnswer();

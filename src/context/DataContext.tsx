@@ -5,10 +5,10 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 interface DataContextType {
   resume: File | null;
   jobDescription: string;
-  projectDescription: string;
+  projectsDescription: string;
   setResume: React.Dispatch<React.SetStateAction<File | null>>;
   setJobDescription: React.Dispatch<React.SetStateAction<string>>;
-  setProjectDescription: React.Dispatch<React.SetStateAction<string>>;
+  setProjectsDescription: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -24,7 +24,7 @@ export const useDataContext = (): DataContextType => {
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [resume, setResume] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState<string>("");
-  const [projectDescription, setProjectDescription] = useState<string>("");
+  const [projectsDescription, setProjectsDescription] = useState<string>("");
 
   return (
     <DataContext.Provider
@@ -33,8 +33,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setResume: setResume,
         jobDescription: jobDescription,
         setJobDescription: setJobDescription,
-        projectDescription: projectDescription,
-        setProjectDescription: setProjectDescription,
+        projectsDescription: projectsDescription,
+        setProjectsDescription: setProjectsDescription,
       }}
     >
       {children}

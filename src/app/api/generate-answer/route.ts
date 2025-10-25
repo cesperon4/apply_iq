@@ -26,15 +26,13 @@ export async function POST(request: NextRequest) {
 
     const hfResponse = await client.chatCompletion({
       provider: "hyperbolic",
-      model: "meta-llama/llama-3.1-8b-instruct",
+      model: "meta-llama/Llama-3.3-70B-Instruct",
       messages: [
         {
           role: "user",
           content: prompt,
         },
       ],
-      top_p: 0.9,
-      top_k: 50,
     });
 
     const rawMessage =
