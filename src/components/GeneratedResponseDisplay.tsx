@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from "docx";
 import { saveAs } from "file-saver";
 
+import { RiNotionFill } from "react-icons/ri";
+
 import dynamic from "next/dynamic";
 import "react-quill-new/dist/quill.snow.css"; // ✅ import it here instead
 
@@ -15,6 +17,7 @@ interface GeneratedResponseProps {
   setGeneratedResponse: React.Dispatch<React.SetStateAction<string>>;
   isResponseGenerating: boolean;
   type: string;
+  addToNotion: (() => void) | null;
 }
 
 export function GeneratedResponseDisplay({
@@ -22,6 +25,7 @@ export function GeneratedResponseDisplay({
   isResponseGenerating,
   setGeneratedResponse,
   type,
+  addToNotion,
 }: GeneratedResponseProps) {
   const [copied, setCopied] = useState(false);
 
@@ -154,6 +158,17 @@ export function GeneratedResponseDisplay({
 
         {generatedResponse && !isResponseGenerating && (
           <div className="flex gap-2 text-gray-700">
+            {addToNotion && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  addToNotion();
+                }}
+                className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+              >
+                Add Job To Notion
+              </button>
+            )}
             <button
               onClick={handleCopy}
               className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
@@ -196,6 +211,16 @@ export function GeneratedResponseDisplay({
               }}
               theme="snow"
             />
+
+            {type === "Cover Letter" && (
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer mx-auto mt-4 text-gray-700"
+              >
+                <RiNotionFill className="w-4 h-4" />
+                Add to Notion
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">

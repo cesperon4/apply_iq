@@ -3,20 +3,24 @@
 import React, { useState } from "react";
 import { useDataContext } from "@/context/DataContext";
 
+import { type CoverLetterResponse } from "@/types/cover-letter";
+import { type ApiResponse } from "@/types/api";
+
 interface CoverLetterHookReturn {
   handleGenerateCoverLetter: () => Promise<void>;
   coverLetter: string;
   setCoverLetter: React.Dispatch<React.SetStateAction<string>>;
   isGenerating: boolean;
 }
-export function useCoverLetter(): CoverLetterHookReturn {
-  const { resume, jobDescription } = useDataContext();
 
-  const [coverLetter, setCoverLetter] = useState<string>("");
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+export function useCoverLetter(): CoverLetterHookReturn {
+  const { resume, jobData, setJobData } = useDataContext();
+
+  const [coverLetter, setCoverLetter] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateCoverLetter = async () => {
-    if (!resume || !jobDescription) {
+    if (!resume || !jobData.jobDescription) {
       alert("Please upload your resume and enter a job description.");
       return;
     }
@@ -25,7 +29,7 @@ export function useCoverLetter(): CoverLetterHookReturn {
     try {
       const formData = new FormData();
       formData.append("resume", resume);
-      formData.append("jobDescription", jobDescription);
+      formData.append("jobDescription", jobData.jobDescription);
       const response = await fetch("/api/generate-cover-letter", {
         method: "POST",
         body: formData,
@@ -35,8 +39,19 @@ export function useCoverLetter(): CoverLetterHookReturn {
         throw new Error("Failed to generate cover letter");
       }
 
-      const data = await response.json();
-      setCoverLetter(data.message);
+      const res = (await response.json()) as ApiResponse<CoverLetterResponse>;
+
+      const coverLetterData = res.data;
+
+      setCoverLetter(coverLetterData.body);
+
+      setJobData((prev) => ({
+        ...prev,
+        compensation: coverLetterData.job_compensation,
+        company: coverLetterData.job_description_company,
+        yoe: coverLetterData.job_description_years_of_experience,
+        position: coverLetterData.job_description_position,
+      }));
     } catch (error) {
       console.error("Error generating cover letter:", error);
       alert("Failed to generate cover letter. Please try again.");

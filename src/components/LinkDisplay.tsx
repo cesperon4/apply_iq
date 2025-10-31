@@ -1,8 +1,10 @@
-import React, { useState } from "react";
-import { CiEdit } from "react-icons/ci";
+import React, { useState, useEffect } from "react";
 import { IoIosAdd } from "react-icons/io";
 import { MdDeleteOutline } from "react-icons/md";
 import { Copy } from "lucide-react";
+
+import { type LinksResponse } from "../types/notion-response";
+import { type ApiResponse } from "@/types/api";
 
 interface link {
   url: string;
@@ -24,7 +26,6 @@ export function LinkDisplay() {
 
   const removeLinkRow = () => {
     if (linksArr.length === 1) return;
-
     setLinksArr((prev) => {
       const updated = [...prev];
       updated.pop();
@@ -56,6 +57,31 @@ export function LinkDisplay() {
       })
       .catch((err) => console.error("Failed to copy:", err));
   };
+
+  const fetchLinks = async () => {
+    try {
+      const response = await fetch("/api/notion/fetch-links", {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate cover letter");
+      }
+
+      const data = (await response.json()) as ApiResponse<LinksResponse[]>;
+      const links = data.data;
+
+      setLinksArr(() => {
+        return links.map((link) => ({ name: link.name, url: link.url }));
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLinks();
+  }, []);
 
   return (
     <div className="grid grid-cols-1 gap-4 bg-white rounded-lg shadow-md p-6 w-full md:w-6/12 mx-auto text-gray-700">

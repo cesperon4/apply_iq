@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { InferenceClient } from "@huggingface/inference";
+// import { InferenceClient } from "@huggingface/inference";
 import { coverLetterPrompt } from "@/lib/prompts/cover-letter-prompt";
+
+import ollama from "ollama";
+
+import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Ensure this runs in Node.js (not Edge)
 export const runtime = "nodejs";
+
+// Example: structured output for a cover letter
+const CoverLetterSchema = z.object({
+  job_description_years_of_experience: z.number(),
+  job_description_company: z.string(),
+  job_description_position: z.string(),
+  job_compensation: z.string(),
+  body: z.string(),
+});
 
 // Helper: Extract text from PDF
 async function extractTextFromPDF(file: File): Promise<string> {
@@ -36,7 +50,7 @@ async function extractTextFromPDF(file: File): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
+    // const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY); //Hugging Face
 
     const formData = await request.formData();
     const resumeFile = formData.get("resume") as File;
@@ -65,44 +79,64 @@ export async function POST(request: NextRequest) {
     // Clean and limit resume text length
     const cleanResume = resumeText.replace(/\s+/g, " ").trim();
 
+    const cleanJobDescription = jobDescription.replace(/\s+/g, " ").trim();
+
     // Build AI prompt
     const prompt = coverLetterPrompt({ resume: cleanResume, jobDescription });
 
     // --- HUGGING FACE CALL ---
-    const apiKey = process.env.HUGGINGFACE_API_KEY;
+    const apiKey = process.env.HUGGINGFACE_API_KEY as string;
 
     if (!apiKey || apiKey === "your_api_key_here") {
       console.log(
         "⚠️ No valid Hugging Face API key found, using fallback generator"
       );
-      const fallback = generateFallbackCoverLetter(cleanResume, jobDescription);
+      const fallback = generateFallbackCoverLetter(
+        cleanResume,
+        cleanJobDescription
+      );
       return NextResponse.json({ coverLetter: fallback });
     }
 
-    const hfResponse = await client.chatCompletion({
-      provider: "hyperbolic",
-      model: "meta-llama/Llama-3.3-70B-Instruct",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+    const result = await ollama.chat({
+      model: "qwen3:latest",
+      messages: [{ role: "user", content: prompt }],
+      format: zodToJsonSchema(CoverLetterSchema), // optional structured output
     });
 
-    const rawMessage =
-      hfResponse.choices?.[0]?.message?.content || "No response";
+    const data = CoverLetterSchema.parse(JSON.parse(result.message.content));
 
-    const message = rawMessage
-      .replace(/<\|.*?\|>/g, "")
-      .replace(/^\s*analysis\s*/i, "")
-      .replace(/^\s*final\s*/i, "")
-      // split into paragraphs
-      .split(/\n{2,}/)
-      .map((para) => `<p>${para.trim()}</p>`)
-      .join("");
+    return NextResponse.json({
+      data: data,
+      success: true,
+      message: "Cover letter generated successfully",
+    });
 
-    return NextResponse.json({ message });
+    //hugging face api call
+    // const hfResponse = await client.chatCompletion({
+    //   provider: "hyperbolic",
+    //   model: "meta-llama/Llama-3.3-70B-Instruct",
+    //   messages: [
+    //     {
+    //       role: "user",
+    //       content: prompt,
+    //     },
+    //   ],
+    // });
+
+    // const rawMessage =
+    //   hfResponse.choices?.[0]?.message?.content || "No response";
+
+    // const message = rawMessage
+    //   .replace(/<\|.*?\|>/g, "")
+    //   .replace(/^\s*analysis\s*/i, "")
+    //   .replace(/^\s*final\s*/i, "")
+    //   // split into paragraphs
+    //   .split(/\n{2,}/)
+    //   .map((para) => `<p>${para.trim()}</p>`)
+    //   .join("");
+
+    // return NextResponse.json({ message });
   } catch (error) {
     console.error("💥 Error generating cover letter:", error);
     return NextResponse.json(

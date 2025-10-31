@@ -7,7 +7,14 @@ export function Header() {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">A</span>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">ApplyIQ</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              ApplyIQ{" "}
+              <span className="text-red-500 text-sm">
+                Hugging face requests limit has been reached for the month
+                (10-29-25). System is currently working locally with Ollama
+                server.
+              </span>
+            </h1>
           </div>
           <nav className="hidden md:flex space-x-6">
             <a

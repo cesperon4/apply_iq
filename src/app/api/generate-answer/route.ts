@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { InferenceClient } from "@huggingface/inference";
+// import { InferenceClient } from "@huggingface/inference";
 import { generateAnswerPrompt } from "@/lib/prompts/generate-answer-prompt";
+
+import ollama from "ollama";
+
+import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
+
+const GeneratedAnswerSchema = z.object({
+  body: z.string(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,32 +31,53 @@ export async function POST(request: NextRequest) {
       question,
     });
 
-    const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
-
-    const hfResponse = await client.chatCompletion({
-      provider: "hyperbolic",
-      model: "meta-llama/Llama-3.3-70B-Instruct",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+    const result = await ollama.chat({
+      model: "qwen3:latest",
+      messages: [{ role: "user", content: prompt }],
+      format: zodToJsonSchema(GeneratedAnswerSchema), // optional structured output
     });
 
-    const rawMessage =
-      hfResponse.choices?.[0]?.message?.content || "No response";
+    const data = GeneratedAnswerSchema.parse(
+      JSON.parse(result.message.content)
+    );
 
-    const message = rawMessage
-      .replace(/<\|.*?\|>/g, "")
-      .replace(/^\s*analysis\s*/i, "")
-      .replace(/^\s*final\s*/i, "")
-      // split into paragraphs
-      .split(/\n{2,}/)
-      .map((para) => `<p>${para.trim()}</p>`)
-      .join("");
+    console.log("data: ", data);
 
-    return NextResponse.json({ message });
+    return NextResponse.json({
+      data: data,
+      success: true,
+      message: "Answer generated successfully",
+    });
+
+    //Ollama call
+
+    //Huggin Face implementation
+    // const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
+
+    // const hfResponse = await client.chatCompletion({
+    //   provider: "hyperbolic",
+    //   model: "meta-llama/Llama-3.3-70B-Instruct",
+    //   messages: [
+    //     {
+    //       role: "user",
+    //       content: prompt,
+    //     },
+    //   ],
+    // });
+
+    // const rawMessage =
+    //   hfResponse.choices?.[0]?.message?.content || "No response";
+
+    // const message = rawMessage
+    //   .replace(/<\|.*?\|>/g, "")
+    //   .replace(/^\s*analysis\s*/i, "")
+    //   .replace(/^\s*final\s*/i, "")
+    //   // split into paragraphs
+    //   .split(/\n{2,}/)
+    //   .map((para) => `<p>${para.trim()}</p>`)
+    //   .join("");
+
+    // return NextResponse.json({ message });
   } catch (error) {
     console.error("💥 Error generating cover letter:", error);
     return NextResponse.json(

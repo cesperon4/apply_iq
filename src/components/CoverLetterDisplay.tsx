@@ -153,6 +153,12 @@ export function CoverLetterDisplay({
         {coverLetter && !isGenerating && (
           <div className="flex gap-2 text-gray-700">
             <button
+              // onClick={handleCopy}
+              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+            >
+              Add Job To Notion
+            </button>
+            <button
               onClick={handleCopy}
               className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
             >

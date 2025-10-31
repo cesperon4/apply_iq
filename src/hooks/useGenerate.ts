@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import { useDataContext } from "@/context/DataContext";
 
+import { type ApiResponse } from "@/types/api";
+import { type GeneratedAnswerResponse } from "@/types/generated-answer";
+
 interface useGenerateReturn {
   generatedAnswer: string;
   setGeneratedAnswer: React.Dispatch<React.SetStateAction<string>>;
@@ -42,9 +45,10 @@ export function useGenerate(): useGenerateReturn {
         throw new Error("Failed to generate cover letter");
       }
 
-      const data = await response.json();
+      const data =
+        (await response.json()) as ApiResponse<GeneratedAnswerResponse>;
 
-      setGeneratedAnswer(data.message);
+      setGeneratedAnswer(data.data.body);
     } catch (error) {
       console.error("Error generating cover letter:", error);
       alert("Failed to generate cover letter. Please try again.");
