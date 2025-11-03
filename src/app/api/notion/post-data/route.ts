@@ -69,7 +69,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, page: newPage });
+    return NextResponse.json({
+      success: true,
+      data: newPage,
+      message: "Data posted to Notion successfully.",
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(

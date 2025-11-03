@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     const resume = formData.get("resume") as File;
     const jobDescription = formData.get("jobDescription") as string;
     const question = formData.get("jobQuestion") as string;
+
     if (!resume || !question)
       return NextResponse.json({
         coverLetter: "Resume and question are required",
@@ -40,8 +41,6 @@ export async function POST(request: NextRequest) {
     const data = GeneratedAnswerSchema.parse(
       JSON.parse(result.message.content)
     );
-
-    console.log("data: ", data);
 
     return NextResponse.json({
       data: data,

@@ -57,16 +57,22 @@ interface URLProperty {
   type: "url";
   url: string;
 }
+interface NumberProperty {
+  id: string;
+  type: "number";
+  number: number;
+}
 // Add more properties as needed
 type NotionProperty =
   | StatusProperty
   | DateProperty
   | TitleProperty
   | RichTextProperty
-  | URLProperty;
+  | URLProperty
+  | NumberProperty;
 
 // --- Step 2: Flatten a property to string ---
-export function flattenProperty(prop: NotionProperty): string {
+export function flattenProperty(prop: NotionProperty): string | number {
   switch (prop.type) {
     case "title":
       return prop.title.map((t) => t.text.content).join("") || "(no title)";
@@ -78,6 +84,8 @@ export function flattenProperty(prop: NotionProperty): string {
       return prop.rich_text.map((t) => t.text.content).join("") || "(no title)";
     case "url":
       return prop.url ?? "";
+    case "number":
+      return prop.number;
 
     default:
       return "";
@@ -87,9 +95,7 @@ export function flattenProperty(prop: NotionProperty): string {
 // --- Step 3: Format Notion results into simple JSON ---
 export function formatPage(page: PageObjectResponse) {
   const properties = page.properties || {};
-  const flattened: Record<string, string> = {};
-
-  console.log("properties: ", properties);
+  const flattened: Record<string, string | number> = {};
   //url not returning correct id?
   Object.entries(properties).forEach(([key, prop]) => {
     flattened[key] = flattenProperty(prop as NotionProperty);
@@ -97,7 +103,7 @@ export function formatPage(page: PageObjectResponse) {
 
   return {
     id: page.id,
-    url: page.url,
+    // url: page.url,
     ...flattened,
   };
 }

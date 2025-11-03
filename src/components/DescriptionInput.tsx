@@ -1,6 +1,6 @@
 import React from "react";
 import { Briefcase } from "lucide-react";
-import { type JobData } from "@/types/job";
+import { type JobData } from "@/types/job.types";
 
 type DescriptionInputProps<T extends string | JobData> = T extends string
   ? {

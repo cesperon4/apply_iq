@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import { FileUpload } from "@/components/FileUpload";
 import { Header } from "@/components/Header";
@@ -7,13 +7,33 @@ import { LinkDisplay } from "@/components/LinkDisplay";
 import { GeneratedResponseDisplay } from "@/components/GeneratedResponseDisplay";
 import { DescriptionInput } from "@/components/DescriptionInput";
 import { InputModal } from "@/components/InputModal";
+import { Records } from "@/components/Records";
 
 import { useGenerate } from "@/hooks/useGenerate";
 import { useCoverLetter } from "@/hooks/useCoverLetter";
 
 import { useDataContext } from "@/context/DataContext";
 
-import { type JobData } from "@/types/job";
+import { toast } from "react-toastify";
+import { type ApiResponse } from "@/types/api.types";
+import { type CountRecord } from "@/types/notion.types";
+
+import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+
+import {
+  type DateFilter,
+  todayFilter,
+  weekFilter,
+  monthFilter,
+  totalFilter,
+} from "@/helpers/dateRange";
+
+import { type JobData } from "@/types/job.types";
+
+import { type RecordCounts, JobCounts } from "@/types/notion.types";
+import { record } from "zod";
+import { count } from "console";
+
 export default function Home() {
   //hooks
   const {
@@ -33,7 +53,16 @@ export default function Home() {
   } = useGenerate();
 
   //contexts
-  const { resume, setResume, jobData, setJobData } = useDataContext();
+  const {
+    resume,
+    setResume,
+    jobData,
+    setJobData,
+    jobCounts,
+    setJobCounts,
+    recordsCount,
+    setRecordsCount,
+  } = useDataContext();
 
   const [openInputModal, setOpenInputModal] = useState(false);
 
@@ -43,10 +72,184 @@ export default function Home() {
     company: "",
   });
 
-  const addJobRow = async () => {
+  const getCount = async (filter: DateFilter) => {
+    const response = await fetch("/api/notion/counts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filter }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = (await response.json()) as ApiResponse<number>;
+
+    if (data.success && data.data !== undefined) {
+      return data.data;
+    } else {
+      throw new Error("Failed to fetch application counts from Notion.");
+    }
+  };
+
+  const updateMax = async (
+    pageId: string,
+    updateMax: number,
+    key: keyof RecordCounts
+  ) => {
     try {
-      if (!jobData) {
-        console.log("missing required data to add to Notion");
+      const response = await fetch(`/api/notion/records/${pageId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          count: updateMax,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = (await response.json()) as ApiResponse<CountRecord>;
+      if (!data.success || data.data === undefined) {
+        throw new Error("Failed to update max count in Notion.");
+      }
+      setRecordsCount((prev) => ({
+        ...prev,
+        [key]: { ...prev[key], count: updateMax },
+      }));
+
+      // return data.data;
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const refetchApplicationCounts = async () => {
+    try {
+      const [today, week, month, total] = await Promise.all([
+        getCount(todayFilter),
+        getCount(weekFilter),
+        getCount(monthFilter),
+        getCount(totalFilter), // total count
+      ]);
+
+      const newCounts = {
+        Daily: today,
+        Weekly: week,
+        Monthly: month,
+        Total: total,
+      } as JobCounts;
+
+      const updatedMax: Partial<RecordCounts> = {};
+
+      Object.keys(jobCounts).forEach((key) => {
+        const jobCountsKey = key as keyof JobCounts;
+        if (newCounts[jobCountsKey] > jobCounts[jobCountsKey]) {
+          updatedMax[jobCountsKey] = {
+            ...recordsCount[jobCountsKey],
+            count: newCounts[jobCountsKey],
+          };
+        }
+      });
+
+      await Promise.all(
+        Object.entries(updatedMax).map(([key, value]) =>
+          updateMax(value.id, value.count, key as keyof RecordCounts)
+        )
+      );
+
+      setJobCounts((prev) => ({
+        ...prev,
+        Daily: today,
+        Weekly: week,
+        Monthly: month,
+        Total: total,
+      }));
+    } catch (err) {
+      console.log("An unexpected error occurred fetching application counts.");
+      console.log(err);
+    }
+  };
+
+  const fetchApplicationCounts = async () => {
+    try {
+      const [
+        todayCountResponse,
+        weekCountResponse,
+        monthCountResponse,
+        totalCountResponse,
+      ] = await Promise.all([
+        getCount(todayFilter),
+        getCount(weekFilter),
+        getCount(monthFilter),
+        getCount(totalFilter), // total count
+      ]);
+
+      setJobCounts((prev) => ({
+        ...prev,
+        Daily: todayCountResponse,
+        Weekly: weekCountResponse,
+        Monthly: monthCountResponse,
+        Total: totalCountResponse,
+      }));
+    } catch (err) {
+      console.log("An unexpected error occurred fetching application counts.");
+      console.log(err);
+    }
+  };
+
+  const fetchRecordsCount = async () => {
+    try {
+      const response = await fetch("/api/notion/records", { method: "GET" });
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = (await response.json()) as ApiResponse<CountRecord[]>;
+
+      if (data.success && data.data !== undefined) {
+        setRecordsCount(() => {
+          const result: RecordCounts = {
+            Daily: { count: 0, id: "" },
+            Weekly: { count: 0, id: "" },
+            Monthly: { count: 0, id: "" },
+            Total: { count: 0, id: "" },
+          };
+
+          data.data.forEach((record) => {
+            result[record.record_name as keyof RecordCounts] = {
+              count: record.count,
+              id: record.id,
+            };
+          });
+
+          return result;
+        });
+      } else {
+        throw new Error("Failed to fetch records count from Notion.");
+      }
+    } catch (err) {
+      console.log("An unexpected error occurred fetching records count.");
+      console.log(err);
+    }
+  };
+
+  const fetchInitialCounts = async () => {
+    await fetchRecordsCount();
+    await fetchApplicationCounts();
+  };
+
+  useEffect(() => {
+    fetchInitialCounts();
+  }, []);
+
+  const addToNotion = async () => {
+    try {
+      if (
+        !jobData.jobDescription ||
+        !coverLetter ||
+        !jobData.company ||
+        !jobData.position ||
+        // !jobData.yoe ||
+        !jobData.compensation
+      ) {
+        console.log("missing required data to add to Notion", jobData);
         return;
       }
 
@@ -62,10 +265,20 @@ export default function Home() {
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
 
-      console.log("add row response: ", data);
+      const data = (await response.json()) as ApiResponse<PageObjectResponse>;
+      if (data.success && data.data) {
+        toast.success("Job application added to Notion!");
+        refetchApplicationCounts();
+      } else {
+        toast.error("Failed to add job application to Notion.");
+      }
+      // console.log("Notion response:", data);
     } catch (err) {
+      toast.error("An unexpected error occurred adding job to Notion.");
       console.log(err);
     }
   };
@@ -92,8 +305,18 @@ export default function Home() {
             personalized cover letter that highlights your relevant experience
             and skills.
           </p>
+          {/* 
+          <button
+            onClick={() => {
+              updateMax("29d23368-5000-8091-a6c3-ea372bfe9e97", 54);
+            }}
+            className="text-black bg-white"
+          >
+            Update
+          </button> */}
 
-          <div className="grid grid-cols-1 gap-8 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <Records />
             <LinkDisplay />
           </div>
         </div>
@@ -101,11 +324,6 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <div className="space-y-6">
             <FileUpload onResumeExtracted={setResume} />
-            {/* <DescriptionInput
-              value={jobData.jobDescription}
-              onChange={setJobData<string>}
-              title={"Job Description"}
-            /> */}
             <DescriptionInput<JobData>
               value={jobData.jobDescription}
               onChange={setJobData}
@@ -134,7 +352,7 @@ export default function Home() {
               setGeneratedResponse={setCoverLetter}
               isResponseGenerating={isGenerating}
               type={"Cover Letter"}
-              addToNotion={addJobRow}
+              addToNotion={addToNotion}
             />
           </div>
 

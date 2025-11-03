@@ -7,6 +7,8 @@ import ollama from "ollama";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
+import { type CoverLetterResponse } from "@/types/notion.types";
+
 // Ensure this runs in Node.js (not Edge)
 export const runtime = "nodejs";
 
@@ -104,7 +106,9 @@ export async function POST(request: NextRequest) {
       format: zodToJsonSchema(CoverLetterSchema), // optional structured output
     });
 
-    const data = CoverLetterSchema.parse(JSON.parse(result.message.content));
+    const data = CoverLetterSchema.parse(
+      JSON.parse(result.message.content)
+    ) as CoverLetterResponse;
 
     return NextResponse.json({
       data: data,

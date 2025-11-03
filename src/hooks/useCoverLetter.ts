@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { useDataContext } from "@/context/DataContext";
 
-import { type CoverLetterResponse } from "@/types/cover-letter";
-import { type ApiResponse } from "@/types/api";
+import { type CoverLetterResponse } from "@/types/notion.types";
+import { type ApiResponse } from "@/types/api.types";
 
 interface CoverLetterHookReturn {
   handleGenerateCoverLetter: () => Promise<void>;

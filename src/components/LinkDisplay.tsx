@@ -3,15 +3,15 @@ import { IoIosAdd } from "react-icons/io";
 import { MdDeleteOutline } from "react-icons/md";
 import { Copy } from "lucide-react";
 
-import { type LinksResponse } from "../types/notion-response";
-import { type ApiResponse } from "@/types/api";
+import { type LinksRecord } from "../types/notion.types";
+import { type ApiResponse } from "@/types/api.types";
 
 interface link {
-  url: string;
+  link: string;
   name: string;
 }
 export function LinkDisplay() {
-  const [linksArr, setLinksArr] = useState<link[]>([{ url: "", name: "" }]);
+  const [linksArr, setLinksArr] = useState<link[]>([{ link: "", name: "" }]);
 
   const [edit, setEdit] = useState<boolean>(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -19,7 +19,7 @@ export function LinkDisplay() {
   const addLinkRow = () => {
     setLinksArr((prev) => {
       const updated = [...prev];
-      updated.push({ url: "", name: "" });
+      updated.push({ link: "", name: "" });
       return updated;
     });
   };
@@ -46,7 +46,7 @@ export function LinkDisplay() {
   };
 
   const handleCopy = (index: number) => {
-    const url = linksArr[index]?.url;
+    const url = linksArr[index]?.link;
     if (!url) return;
 
     navigator.clipboard
@@ -60,7 +60,7 @@ export function LinkDisplay() {
 
   const fetchLinks = async () => {
     try {
-      const response = await fetch("/api/notion/fetch-links", {
+      const response = await fetch("/api/notion/links", {
         method: "GET",
       });
 
@@ -68,11 +68,11 @@ export function LinkDisplay() {
         throw new Error("Failed to generate cover letter");
       }
 
-      const data = (await response.json()) as ApiResponse<LinksResponse[]>;
+      const data = (await response.json()) as ApiResponse<LinksRecord[]>;
       const links = data.data;
 
       setLinksArr(() => {
-        return links.map((link) => ({ name: link.name, url: link.url }));
+        return links.map((link) => ({ name: link.link_name, link: link.link }));
       });
     } catch (err) {
       console.log(err);
@@ -84,14 +84,14 @@ export function LinkDisplay() {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 gap-4 bg-white rounded-lg shadow-md p-6 w-full md:w-6/12 mx-auto text-gray-700">
+    <div className="grid grid-cols-1 gap-4 bg-white rounded-lg shadow-md p-6 w-full mx-auto text-gray-700">
       <h2>My Links</h2>
       {linksArr.map((link, index) => (
         <div className="flex gap-2 justify-center" key={index}>
           <input
             placeholder="name"
             id="name"
-            value={linksArr[index].name}
+            defaultValue={linksArr[index].name}
             disabled={!edit}
             type="text"
             className="shadow p-2"
@@ -102,7 +102,7 @@ export function LinkDisplay() {
           <input
             placeholder="link"
             id="url"
-            value={linksArr[index].url}
+            defaultValue={linksArr[index].link}
             disabled={!edit}
             type="text"
             className="shadow p-2"

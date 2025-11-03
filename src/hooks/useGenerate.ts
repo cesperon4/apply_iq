@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { useDataContext } from "@/context/DataContext";
 
-import { type ApiResponse } from "@/types/api";
-import { type GeneratedAnswerResponse } from "@/types/generated-answer";
+import { type ApiResponse } from "@/types/api.types";
+import { type GeneratedAnswerResponse } from "@/types/chat.types";
 
 interface useGenerateReturn {
   generatedAnswer: string;
@@ -16,13 +16,13 @@ interface useGenerateReturn {
 }
 
 export function useGenerate(): useGenerateReturn {
-  const { resume, jobDescription } = useDataContext();
+  const { resume, jobData } = useDataContext();
   const [generatedAnswer, setGeneratedAnswer] = useState<string>("");
   const [question, setQuestion] = useState<string>("");
   const [isAnswerGenerating, setIsAnswerGenerating] = useState<boolean>(false);
 
   const handleGenerateAnswer = async () => {
-    if (!resume || !jobDescription || !question) {
+    if (!resume || !jobData.jobDescription || !question) {
       alert(
         "Please upload your resume and enter a job description along with your question"
       );
@@ -33,7 +33,7 @@ export function useGenerate(): useGenerateReturn {
     try {
       const formData = new FormData();
       formData.append("resume", resume);
-      formData.append("jobDescription", jobDescription);
+      formData.append("jobDescription", jobData.jobDescription);
       formData.append("jobQuestion", question);
 
       const response = await fetch("/api/generate-answer", {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { notion } from "@/lib/clients/notion";
 import { formatPage } from "@/helpers/notion";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import { type LinksRecord } from "@/types/notion.types";
 
 export async function GET() {
   try {
@@ -22,9 +23,7 @@ export async function GET() {
 
     const formattedResults = results.map((result) =>
       formatPage(result as PageObjectResponse)
-    );
-
-    // console.log("formattedResults: ", formattedResults);
+    ) as LinksRecord[];
 
     return NextResponse.json({
       success: true,
