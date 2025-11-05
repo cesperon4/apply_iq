@@ -1,0 +1,14 @@
+export const techLogos: Record<string, string> = {
+  react: "/react.svg",
+  Go: "/logos/go.svg",
+  ["node.js"]: "/node.svg",
+  typescript: "/typescript.svg",
+  Python: "/logos/python.svg",
+  kubernetes: "/kubernetes.svg",
+  nestjs: "/nestjs.svg",
+  aws: "/aws.svg",
+  graphql: "/graphql.svg",
+  ["react native"]: "/react.svg",
+  docker: "/docker.svg",
+  postgresql: "/postgresql.svg",
+};

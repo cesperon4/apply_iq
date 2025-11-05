@@ -5,7 +5,7 @@ import { formatPage } from "@/helpers/notion";
 import { type CountRecord } from "@/types/notion.types";
 
 export async function PUT(
-  req: Request,
+  req: NextResponse,
   { params }: { params: { id: string } } // pageId
 ) {
   try {

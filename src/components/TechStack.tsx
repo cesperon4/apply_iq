@@ -1,21 +1,7 @@
 import React from "react";
 import { useDataContext } from "@/context/DataContext";
 import Image from "next/image";
-const techLogos: Record<string, string> = {
-  react: "/react.svg",
-  Go: "/logos/go.svg",
-  ["node.js"]: "/node.svg",
-  typescript: "/typescript.svg",
-  Python: "/logos/python.svg",
-  kubernetes: "/kubernetes.svg",
-  nestjs: "/nestjs.svg",
-  aws: "/aws.svg",
-  graphql: "/graphql.svg",
-  ["react native"]: "/react.svg",
-  docker: "/docker.svg",
-  postgresql: "/postgresql.svg",
-};
-
+import { techLogos } from "@/lib/constants";
 export function TechStack() {
   const { techStackCount } = useDataContext();
   return (
@@ -32,7 +18,7 @@ export function TechStack() {
                 width={70}
                 height={70}
               />
-              <span className="font-medium">{key}</span>
+              <span className="font-semibold">{key}</span>
               <span>{value}</span>
             </div>
           ))}
