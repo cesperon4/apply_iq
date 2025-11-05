@@ -1,15 +1,15 @@
 interface generateAnswerPromptArgs {
-  jobDescription: string;
+  job_description: string;
 }
 
 export function extractJobInfoPrompt({
-  jobDescription,
+  job_description,
 }: generateAnswerPromptArgs): string {
   return `
     Extract the following information from the job description below:
 
     Job description: """
-    ${jobDescription}
+    ${job_description}
     """
 
     Return a JSON object with keys:

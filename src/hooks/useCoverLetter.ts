@@ -20,7 +20,7 @@ export function useCoverLetter(): CoverLetterHookReturn {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateCoverLetter = async () => {
-    if (!resume || !jobData.jobDescription) {
+    if (!resume || !jobData.job_description) {
       alert("Please upload your resume and enter a job description.");
       return;
     }
@@ -29,7 +29,7 @@ export function useCoverLetter(): CoverLetterHookReturn {
     try {
       const formData = new FormData();
       formData.append("resume", resume);
-      formData.append("jobDescription", jobData.jobDescription);
+      formData.append("job_description", jobData.job_description);
       const response = await fetch("/api/generate-cover-letter", {
         method: "POST",
         body: formData,
@@ -43,6 +43,10 @@ export function useCoverLetter(): CoverLetterHookReturn {
 
       const coverLetterData = res.data;
 
+      const tech_stack = coverLetterData.job_tech_stack.map((tech) => ({
+        name: tech,
+      }));
+
       setCoverLetter(coverLetterData.body);
 
       setJobData((prev) => ({
@@ -51,6 +55,7 @@ export function useCoverLetter(): CoverLetterHookReturn {
         company: coverLetterData.job_description_company,
         yoe: coverLetterData.job_description_years_of_experience,
         position: coverLetterData.job_description_position,
+        tech_stack: tech_stack,
       }));
     } catch (error) {
       console.error("Error generating cover letter:", error);

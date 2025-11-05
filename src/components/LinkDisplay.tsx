@@ -87,7 +87,10 @@ export function LinkDisplay() {
     <div className="grid grid-cols-1 gap-4 bg-white rounded-lg shadow-md p-6 w-full mx-auto text-gray-700">
       <h2>My Links</h2>
       {linksArr.map((link, index) => (
-        <div className="flex gap-2 justify-center" key={index}>
+        <div
+          className="flex flex-col md:flex-row gap-2 justify-center"
+          key={index}
+        >
           <input
             placeholder="name"
             id="name"

@@ -3,7 +3,7 @@ import { GiDiamondTrophy } from "react-icons/gi";
 import { useDataContext } from "@/context/DataContext";
 
 export function Records() {
-  const { jobCounts } = useDataContext();
+  const { jobCounts, recordsCount } = useDataContext();
 
   return (
     <section className="flex flex-col gap-4 p-6 bg-white rounded-lg shadow-md text-gray-700">
@@ -13,22 +13,14 @@ export function Records() {
       </header>
 
       <div className="flex justify-between p-4 rounded border-1 border-gray-300">
-        <div className="flex flex-col">
-          <span className="text-gray-900">Daily Best</span>
-          <span className="text-gray-900">1</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-gray-900">Weekly Best</span>
-          <span className="text-gray-900">37</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-gray-900">Monthly Best</span>
-          <span className="text-gray-900">54</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-gray-900">Annual Best</span>
-          <span className="text-gray-900">54</span>
-        </div>
+        {Object.entries(recordsCount).map(([key, record]) => (
+          <div className="flex flex-col" key={key}>
+            <span className="text-gray-900">{`${
+              key === "Total" ? "Annual" : key
+            } Best`}</span>
+            <span className="text-gray-900">{record.count}</span>
+          </div>
+        ))}
       </div>
       <section className="text-center grid grid-cols-2 gap-2">
         {Object.entries(jobCounts).map(([key, value]) => (

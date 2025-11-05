@@ -1,12 +1,12 @@
 interface generateAnswerPromptArgs {
   resume: string;
-  jobDescription: string;
+  job_description: string;
   question: string;
 }
 
 export function generateAnswerPrompt({
   resume,
-  jobDescription,
+  job_description,
   question,
 }: generateAnswerPromptArgs): string {
   return `You are an expert career counselor and understand exactly what tech companies are looking for when it comes to application questions asked.
@@ -15,7 +15,7 @@ export function generateAnswerPrompt({
   
   RESUME: ${resume}
 
-  JOB DESCRIPTION: ${jobDescription}
+  JOB DESCRIPTION: ${job_description}
 
   Question: ${question}
 

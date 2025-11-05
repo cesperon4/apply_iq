@@ -1,4 +1,11 @@
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import {
+  type JobRecord,
+  type LinksRecord,
+  type CountRecord,
+  type NotionRecord,
+  type tech,
+} from "@/types/notion.types";
 
 // --- Step 1: Define Notion property types ---
 interface Status {
@@ -62,6 +69,12 @@ interface NumberProperty {
   type: "number";
   number: number;
 }
+
+interface MultiSelectProperty {
+  id: string;
+  type: "multi_select";
+  multi_select: tech[];
+}
 // Add more properties as needed
 type NotionProperty =
   | StatusProperty
@@ -69,10 +82,13 @@ type NotionProperty =
   | TitleProperty
   | RichTextProperty
   | URLProperty
-  | NumberProperty;
+  | NumberProperty
+  | MultiSelectProperty;
 
 // --- Step 2: Flatten a property to string ---
-export function flattenProperty(prop: NotionProperty): string | number {
+export function flattenProperty(
+  prop: NotionProperty
+): string | number | tech[] {
   switch (prop.type) {
     case "title":
       return prop.title.map((t) => t.text.content).join("") || "(no title)";
@@ -86,16 +102,21 @@ export function flattenProperty(prop: NotionProperty): string | number {
       return prop.url ?? "";
     case "number":
       return prop.number;
-
+    case "multi_select":
+      return prop.multi_select.map((item) => ({
+        name: item.name,
+      }));
     default:
       return "";
   }
 }
 
 // --- Step 3: Format Notion results into simple JSON ---
-export function formatPage(page: PageObjectResponse) {
+export function formatPage(
+  page: PageObjectResponse
+): JobRecord | LinksRecord | CountRecord | NotionRecord {
   const properties = page.properties || {};
-  const flattened: Record<string, string | number> = {};
+  const flattened: Record<string, string | number | tech[]> = {};
   //url not returning correct id?
   Object.entries(properties).forEach(([key, prop]) => {
     flattened[key] = flattenProperty(prop as NotionProperty);
