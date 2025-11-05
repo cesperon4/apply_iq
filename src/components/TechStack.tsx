@@ -9,7 +9,8 @@ export function TechStack() {
       <h2 className="font-semibold">Tech Stack Frequency</h2>
       <div className="flex justify-between mt-8">
         {Object.entries(techStackCount)
-          .sort((a, b) => b[1] - a[1])
+          .sort((a, b) => b[1] - a[1]) // sort by count descending
+          .slice(0, 10) // take top 10
           .map(([key, value]) => (
             <div key={key} className="grid grid-cols-1">
               <Image

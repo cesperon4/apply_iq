@@ -6,11 +6,7 @@ type InputModalProps = {
   setInputValues: React.Dispatch<React.SetStateAction<inputValue>>;
   setOpenInputModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
-export function InputModal({
-  inputValues,
-  setInputValues,
-  setOpenInputModal,
-}: InputModalProps) {
+export function InputModal({ inputValues, setInputValues }: InputModalProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const id = e.target.id;
 

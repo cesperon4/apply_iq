@@ -133,6 +133,14 @@ export async function POST(req: NextRequest) {
 
     const cleanedCoverLetter = stripHtml(coverLetter);
 
+    console.log("tech stack: ", tech_stack);
+
+    // const stripped = str.replace(/,/g, ""); // remove all commas
+
+    const stripped = tech_stack.map((stack: { name: string }) => ({
+      name: stack.name.replace(/,/g, ""),
+    }));
+
     const newPage = await notion.pages.create({
       parent: {
         database_id: process.env.NOTION_DATABASE_ID!,
@@ -167,7 +175,7 @@ export async function POST(req: NextRequest) {
           rich_text: toRichText(compensation),
         },
         tech_stack: {
-          multi_select: tech_stack.map((tech: { name: string }) => ({
+          multi_select: stripped.map((tech: { name: string }) => ({
             name: tech.name.toLowerCase(),
           })),
         },

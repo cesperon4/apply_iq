@@ -11,4 +11,6 @@ export const techLogos: Record<string, string> = {
   ["react native"]: "/react.svg",
   docker: "/docker.svg",
   postgresql: "/postgresql.svg",
+  ["c#"]: "/csharp.svg",
+  azure: "/azure.svg",
 };
