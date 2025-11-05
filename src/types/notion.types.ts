@@ -12,9 +12,26 @@ export type CountRecord = NotionRecord & {
   count: number;
 };
 
+export type tech = {
+  name: string;
+};
+
+export type JobRecord = NotionRecord & {
+  job_description: string;
+  company: string;
+  status: string;
+  date_applied: string;
+  cover_letter: string;
+  position: string;
+  compensation: string;
+  yoe: number;
+  tech_stack: tech[];
+};
+
 export type CoverLetterResponse = {
   body: string;
   job_compensation: string;
+  job_tech_stack: string[];
   job_description_company: string;
   job_description_position: string;
   job_description_years_of_experience: number;

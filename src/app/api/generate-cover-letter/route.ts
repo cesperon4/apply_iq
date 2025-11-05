@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 import { type CoverLetterResponse } from "@/types/notion.types";
+// import { type JobRecord } from "@/types/job.types";
 
 // Ensure this runs in Node.js (not Edge)
 export const runtime = "nodejs";
@@ -18,6 +19,7 @@ const CoverLetterSchema = z.object({
   job_description_company: z.string(),
   job_description_position: z.string(),
   job_compensation: z.string(),
+  job_tech_stack: z.array(z.string()),
   body: z.string(),
 });
 
@@ -56,9 +58,9 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const resumeFile = formData.get("resume") as File;
-    const jobDescription = formData.get("jobDescription") as string;
+    const job_description = formData.get("job_description") as string;
 
-    if (!resumeFile || !jobDescription) {
+    if (!resumeFile || !job_description) {
       return NextResponse.json(
         { error: "Resume and job description are required." },
         { status: 400 }
@@ -81,10 +83,10 @@ export async function POST(request: NextRequest) {
     // Clean and limit resume text length
     const cleanResume = resumeText.replace(/\s+/g, " ").trim();
 
-    const cleanJobDescription = jobDescription.replace(/\s+/g, " ").trim();
+    const cleanJobDescription = job_description.replace(/\s+/g, " ").trim();
 
     // Build AI prompt
-    const prompt = coverLetterPrompt({ resume: cleanResume, jobDescription });
+    const prompt = coverLetterPrompt({ resume: cleanResume, job_description });
 
     // --- HUGGING FACE CALL ---
     const apiKey = process.env.HUGGINGFACE_API_KEY as string;
@@ -156,11 +158,11 @@ export async function POST(request: NextRequest) {
 // --- FALLBACK GENERATOR ---
 function generateFallbackCoverLetter(
   resume: string,
-  jobDescription: string
+  job_description: string
 ): string {
   const nameLine = resume.split("\n")[0] || "Dear Hiring Manager";
   const email = resume.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i)?.[0];
-  const company = extractCompanyName(jobDescription);
+  const company = extractCompanyName(job_description);
 
   return `Dear Hiring Manager,
 

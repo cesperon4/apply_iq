@@ -22,7 +22,7 @@ export function useGenerate(): useGenerateReturn {
   const [isAnswerGenerating, setIsAnswerGenerating] = useState<boolean>(false);
 
   const handleGenerateAnswer = async () => {
-    if (!resume || !jobData.jobDescription || !question) {
+    if (!resume || !jobData.job_description || !question) {
       alert(
         "Please upload your resume and enter a job description along with your question"
       );
@@ -33,7 +33,7 @@ export function useGenerate(): useGenerateReturn {
     try {
       const formData = new FormData();
       formData.append("resume", resume);
-      formData.append("jobDescription", jobData.jobDescription);
+      formData.append("job_description", jobData.job_description);
       formData.append("jobQuestion", question);
 
       const response = await fetch("/api/generate-answer", {

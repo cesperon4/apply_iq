@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const resume = formData.get("resume") as File;
-    const jobDescription = formData.get("jobDescription") as string;
+    const job_description = formData.get("job_description") as string;
     const question = formData.get("jobQuestion") as string;
 
     if (!resume || !question)
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     const prompt = generateAnswerPrompt({
       resume: cleanResume,
-      jobDescription,
+      job_description,
       question,
     });
 

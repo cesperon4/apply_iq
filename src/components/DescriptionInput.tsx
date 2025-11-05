@@ -1,8 +1,8 @@
 import React from "react";
 import { Briefcase } from "lucide-react";
-import { type JobData } from "@/types/job.types";
+import { type JobRecord } from "@/types/notion.types";
 
-type DescriptionInputProps<T extends string | JobData> = T extends string
+type DescriptionInputProps<T extends string | JobRecord> = T extends string
   ? {
       value: string;
       onChange: React.Dispatch<React.SetStateAction<string>>;
@@ -11,20 +11,20 @@ type DescriptionInputProps<T extends string | JobData> = T extends string
     }
   : {
       value: string;
-      onChange: React.Dispatch<React.SetStateAction<JobData>>;
+      onChange: React.Dispatch<React.SetStateAction<JobRecord>>;
+      field: keyof JobRecord;
       title: string;
-      field: keyof JobData;
     };
 
-export function DescriptionInput<T extends string | JobData>(
+export function DescriptionInput<T extends string | JobRecord>(
   props: DescriptionInputProps<T>
 ) {
   const handleChange = (val: string) => {
     if ("field" in props && props.field) {
       // TS knows props.field exists → T is JobData
-      (props.onChange as React.Dispatch<React.SetStateAction<JobData>>)(
+      (props.onChange as React.Dispatch<React.SetStateAction<JobRecord>>)(
         (prev) => ({
-          ...(prev as JobData),
+          ...(prev as JobRecord),
           [props.field]: val,
         })
       );

@@ -8,6 +8,7 @@ import { GeneratedResponseDisplay } from "@/components/GeneratedResponseDisplay"
 import { DescriptionInput } from "@/components/DescriptionInput";
 import { InputModal } from "@/components/InputModal";
 import { Records } from "@/components/Records";
+import { TechStack } from "@/components/TechStack";
 
 import { useGenerate } from "@/hooks/useGenerate";
 import { useCoverLetter } from "@/hooks/useCoverLetter";
@@ -17,6 +18,7 @@ import { useDataContext } from "@/context/DataContext";
 import { toast } from "react-toastify";
 import { type ApiResponse } from "@/types/api.types";
 import { type CountRecord } from "@/types/notion.types";
+import { type GetJobs } from "@/types/api.types";
 
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 
@@ -28,11 +30,9 @@ import {
   totalFilter,
 } from "@/helpers/dateRange";
 
-import { type JobData } from "@/types/job.types";
+import { type JobRecord } from "@/types/notion.types";
 
 import { type RecordCounts, JobCounts } from "@/types/notion.types";
-import { record } from "zod";
-import { count } from "console";
 
 export default function Home() {
   //hooks
@@ -62,6 +62,8 @@ export default function Home() {
     setJobCounts,
     recordsCount,
     setRecordsCount,
+
+    setTechStackCount,
   } = useDataContext();
 
   const [openInputModal, setOpenInputModal] = useState(false);
@@ -107,9 +109,12 @@ export default function Home() {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const data = (await response.json()) as ApiResponse<CountRecord>;
+      console.log("data: ", data);
       if (!data.success || data.data === undefined) {
         throw new Error("Failed to update max count in Notion.");
       }
+
+      console.log("Count Record", updateMax);
       setRecordsCount((prev) => ({
         ...prev,
         [key]: { ...prev[key], count: updateMax },
@@ -141,7 +146,7 @@ export default function Home() {
 
       Object.keys(jobCounts).forEach((key) => {
         const jobCountsKey = key as keyof JobCounts;
-        if (newCounts[jobCountsKey] > jobCounts[jobCountsKey]) {
+        if (newCounts[jobCountsKey] > recordsCount[jobCountsKey].count) {
           updatedMax[jobCountsKey] = {
             ...recordsCount[jobCountsKey],
             count: newCounts[jobCountsKey],
@@ -164,6 +169,26 @@ export default function Home() {
       }));
     } catch (err) {
       console.log("An unexpected error occurred fetching application counts.");
+      console.log(err);
+    }
+  };
+
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch("/api/notion/jobs", { method: "GET" });
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = (await response.json()) as ApiResponse<GetJobs>;
+
+      if (data.success && data.data !== undefined) {
+        console.log("Fetched applications: ", data.data);
+        setTechStackCount(data.data.tech_counts);
+      } else {
+        throw new Error("Failed to fetch applications from Notion.");
+      }
+    } catch (err) {
+      console.log("An unexpected error occurred fetching applications.");
       console.log(err);
     }
   };
@@ -233,6 +258,7 @@ export default function Home() {
   const fetchInitialCounts = async () => {
     await fetchRecordsCount();
     await fetchApplicationCounts();
+    await fetchApplications(); //?
   };
 
   useEffect(() => {
@@ -242,26 +268,28 @@ export default function Home() {
   const addToNotion = async () => {
     try {
       if (
-        !jobData.jobDescription ||
+        !jobData.job_description ||
         !coverLetter ||
         !jobData.company ||
         !jobData.position ||
         // !jobData.yoe ||
-        !jobData.compensation
+        !jobData.compensation ||
+        !jobData.tech_stack
       ) {
         console.log("missing required data to add to Notion", jobData);
         return;
       }
 
-      const response = await fetch("/api/notion/post-data", {
+      const response = await fetch("/api/notion/jobs", {
         method: "POST",
         body: JSON.stringify({
           coverLetter,
-          jobDescription: jobData.jobDescription,
+          job_description: jobData.job_description,
           company: jobData.company,
           yoe: jobData.yoe,
           compensation: jobData.compensation,
           position: jobData.position,
+          tech_stack: jobData.tech_stack,
         }),
       });
 
@@ -276,7 +304,6 @@ export default function Home() {
       } else {
         toast.error("Failed to add job application to Notion.");
       }
-      // console.log("Notion response:", data);
     } catch (err) {
       toast.error("An unexpected error occurred adding job to Notion.");
       console.log(err);
@@ -305,15 +332,10 @@ export default function Home() {
             personalized cover letter that highlights your relevant experience
             and skills.
           </p>
-          {/* 
-          <button
-            onClick={() => {
-              updateMax("29d23368-5000-8091-a6c3-ea372bfe9e97", 54);
-            }}
-            className="text-black bg-white"
-          >
-            Update
-          </button> */}
+
+          <div className="grid grid-cols-1 gap-8 mt-8">
+            <TechStack />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
             <Records />
@@ -324,15 +346,15 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <div className="space-y-6">
             <FileUpload onResumeExtracted={setResume} />
-            <DescriptionInput<JobData>
-              value={jobData.jobDescription}
+            <DescriptionInput<JobRecord>
+              value={jobData.job_description}
               onChange={setJobData}
               title="Job Description"
-              field="jobDescription"
+              field="job_description"
             />
             <button
               onClick={handleGenerateCoverLetter}
-              disabled={isGenerating || !resume || !jobData.jobDescription}
+              disabled={isGenerating || !resume || !jobData.job_description}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isGenerating ? (
@@ -367,7 +389,7 @@ export default function Home() {
                 handleGenerateAnswer();
               }}
               disabled={
-                isAnswerGenerating || !resume || !jobData.jobDescription
+                isAnswerGenerating || !resume || !jobData.job_description
               }
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
