@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { notion } from "@/lib/clients/notion";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import { formatPage } from "@/helpers/notion";
 import { type CountRecord } from "@/types/notion.types";
 
 export async function PUT(
-  req: NextResponse,
+  req: NextRequest,
   { params }: { params: { id: string } } // pageId
 ) {
   try {
