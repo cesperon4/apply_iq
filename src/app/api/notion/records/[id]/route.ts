@@ -4,10 +4,9 @@ import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import { formatPage } from "@/helpers/notion";
 import { type CountRecord } from "@/types/notion.types";
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } } // pageId
-) {
+type Params = Promise<{ id: string }>;
+
+export async function PUT(req: NextRequest, { params }: { params: Params }) {
   try {
     const { id } = await params;
     const databaseId = process.env.NOTION_RECORDS_DATABASE_ID;
