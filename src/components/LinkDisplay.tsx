@@ -35,12 +35,12 @@ export function LinkDisplay() {
 
   const handleOnChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    index: number
+    index: number,
   ) => {
     const key = e.target.id as keyof link;
     setLinksArr((prev) => {
       return prev.map((link, i) =>
-        i === index ? { ...link, [key]: e.target.value } : link
+        i === index ? { ...link, [key]: e.target.value } : link,
       );
     });
   };
@@ -83,70 +83,77 @@ export function LinkDisplay() {
     fetchLinks();
   }, []);
 
+  const inputClass =
+    "rounded-xl border border-zinc-700/80 bg-zinc-950/50 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 shadow-none focus:border-emerald-500/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60";
+
   return (
-    <div className="grid grid-cols-1 gap-4 bg-white rounded-lg shadow-md p-6 w-full mx-auto text-gray-700">
-      <h2>My Links</h2>
+    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6 text-zinc-300 shadow-[0_0_40px_-16px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+      <h2 className="text-lg font-semibold text-zinc-100">My links</h2>
       {linksArr.map((link, index) => (
         <div
-          className="flex flex-col md:flex-row gap-2 justify-center"
+          className="flex flex-col justify-center gap-2 md:flex-row md:items-center"
           key={index}
         >
           <input
-            placeholder="name"
+            placeholder="Name"
             id="name"
             defaultValue={linksArr[index].name}
             disabled={!edit}
             type="text"
-            className="shadow p-2"
+            className={`${inputClass} min-w-0 flex-1`}
             onChange={(e) => {
               handleOnChange(e, index);
             }}
           />
           <input
-            placeholder="link"
-            id="url"
+            placeholder="URL"
+            id="link"
             defaultValue={linksArr[index].link}
             disabled={!edit}
             type="text"
-            className="shadow p-2"
+            className={`${inputClass} min-w-0 flex-[2]`}
             onChange={(e) => {
               handleOnChange(e, index);
             }}
           />
           <button
+            type="button"
             onClick={() => {
               handleCopy(index);
             }}
-            className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+            className="flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 py-2.5 text-sm transition hover:border-emerald-500/40 hover:bg-zinc-800"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="h-4 w-4" />
             {copiedIndex === index ? "Copied!" : "Copy"}
           </button>
         </div>
       ))}
 
       {edit ? (
-        <div className="flex gap-4">
-          <a
-            className="flex items-center justify-center gap-2 cursor-pointer bg-orange-400 w-6/12 text-white p-2 rounded mx-auto"
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <button
+            type="button"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-200 transition hover:bg-red-950/60 sm:min-w-[10rem]"
             onClick={() => {
               removeLinkRow();
             }}
           >
-            <MdDeleteOutline />
-            <span>remove row</span>
-          </a>
-          <a
-            className="flex items-center justify-center gap-2 cursor-pointer bg-blue-400 w-6/12 text-white p-2 rounded mx-auto"
+            <MdDeleteOutline className="text-lg" aria-hidden />
+            Remove row
+          </button>
+          <button
+            type="button"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/15 sm:min-w-[10rem]"
             onClick={() => {
               addLinkRow();
             }}
           >
-            <IoIosAdd />
-            <span>add link</span>
-          </a>
+            <IoIosAdd className="text-lg" aria-hidden />
+            Add link
+          </button>
           <button
-            className="bg-green-400 w-6/12 mx-auto p-2 rounded text-white cursor-pointer"
+            type="button"
+            className="flex flex-1 cursor-pointer items-center justify-center rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 sm:min-w-[10rem]"
             onClick={() => {
               setEdit((prev) => !prev);
             }}
@@ -156,7 +163,8 @@ export function LinkDisplay() {
         </div>
       ) : (
         <button
-          className="bg-gray-400 w-2/12 mx-auto p-2 rounded text-white cursor-pointer"
+          type="button"
+          className="mx-auto w-full max-w-xs cursor-pointer rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-emerald-500/40 hover:bg-zinc-800"
           onClick={() => {
             setEdit((prev) => !prev);
           }}

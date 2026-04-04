@@ -17,7 +17,7 @@ type DescriptionInputProps<T extends string | JobRecord> = T extends string
     };
 
 export function DescriptionInput<T extends string | JobRecord>(
-  props: DescriptionInputProps<T>
+  props: DescriptionInputProps<T>,
 ) {
   const handleChange = (val: string) => {
     if ("field" in props && props.field) {
@@ -26,7 +26,7 @@ export function DescriptionInput<T extends string | JobRecord>(
         (prev) => ({
           ...(prev as JobRecord),
           [props.field]: val,
-        })
+        }),
       );
     } else {
       (props.onChange as React.Dispatch<React.SetStateAction<string>>)(val);
@@ -34,16 +34,16 @@ export function DescriptionInput<T extends string | JobRecord>(
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <Briefcase className="w-5 h-5" />
+    <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6 shadow-[0_0_40px_-16px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+      <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-100">
+        <Briefcase className="h-5 w-5 text-emerald-400/90" aria-hidden />
         {`${props.title}`}
       </h2>
 
       <div className="space-y-2">
         <label
           htmlFor="job-description"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-zinc-400"
         >
           Paste the job description below
         </label>
@@ -54,14 +54,15 @@ export function DescriptionInput<T extends string | JobRecord>(
             handleChange(e.target.value);
           }}
           placeholder="Copy and paste the job description here. Include details about the role, requirements, and company information..."
-          className="w-full h-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-600"
+          className="h-64 w-full resize-none rounded-xl border border-zinc-700/80 bg-zinc-950/50 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-emerald-500/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           rows={12}
         />
-        <p className="text-xs text-gray-500">{props.value.length} characters</p>
+        <p className="text-xs text-zinc-500">{props.value.length} characters</p>
       </div>
 
       <button
-        className="bg-gray-300 text-white p-2 rounded"
+        type="button"
+        className="mt-4 rounded-lg border border-zinc-700 bg-zinc-800/80 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100"
         onClick={() => {
           handleChange("");
         }}

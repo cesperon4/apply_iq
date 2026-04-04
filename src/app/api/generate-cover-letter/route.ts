@@ -2,26 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 // import { InferenceClient } from "@huggingface/inference";
 import { coverLetterPrompt } from "@/lib/prompts/cover-letter-prompt";
 
-import ollama from "ollama";
+import { ollama } from "@/lib/clients/ollama";
 
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import {
+  coverLetterOutputSchema,
+  coverLetterJsonSchema,
+} from "@/lib/schemas/cover-letter-output";
+import {
+  sanitizeCoverLetterOutput,
+  extractCandidateNameFromExcerpts,
+} from "@/lib/cover-letter-sanitize";
 
 import { type CoverLetterResponse } from "@/types/notion.types";
 // import { type JobRecord } from "@/types/job.types";
 
 // Ensure this runs in Node.js (not Edge)
 export const runtime = "nodejs";
-
-// Example: structured output for a cover letter
-const CoverLetterSchema = z.object({
-  job_description_years_of_experience: z.number(),
-  job_description_company: z.string(),
-  job_description_position: z.string(),
-  job_compensation: z.string(),
-  job_tech_stack: z.array(z.string()),
-  body: z.string(),
-});
 
 // Helper: Extract text from PDF
 async function extractTextFromPDF(file: File): Promise<string> {
@@ -35,7 +31,7 @@ async function extractTextFromPDF(file: File): Promise<string> {
     if (!extractedText) throw new Error("No text found in PDF");
 
     console.log(
-      `✅ Extracted ${extractedText.length} characters from ${file.name}`
+      `✅ Extracted ${extractedText.length} characters from ${file.name}`,
     );
     return extractedText;
   } catch (error) {
@@ -57,60 +53,88 @@ export async function POST(request: NextRequest) {
     // const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY); //Hugging Face
 
     const formData = await request.formData();
-    const resumeFile = formData.get("resume") as File;
+    // const resumeFile = formData.get("resume") as File;
     const job_description = formData.get("job_description") as string;
+    const excerpts = formData.get("excerpts") as string;
+    const candidate_name_raw = formData.get("candidate_name");
+    const candidate_name_from_client =
+      typeof candidate_name_raw === "string" ? candidate_name_raw.trim() : "";
+    const candidate_name =
+      candidate_name_from_client ||
+      process.env.APPLICANT_NAME?.trim() ||
+      extractCandidateNameFromExcerpts(excerpts) ||
+      undefined;
 
-    if (!resumeFile || !job_description) {
+    if (!job_description || !excerpts) {
       return NextResponse.json(
         { error: "Resume and job description are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Extract resume text
-    let resumeText = "";
-    if (resumeFile.type === "text/plain") {
-      resumeText = await resumeFile.text();
-    } else if (resumeFile.type === "application/pdf") {
-      resumeText = await extractTextFromPDF(resumeFile);
-    } else {
-      return NextResponse.json(
-        { error: "Unsupported file type. Please upload a PDF or text file." },
-        { status: 400 }
-      );
-    }
+    // // Extract resume text
+    // let resumeText = "";
+    // if (resumeFile.type === "text/plain") {
+    //   resumeText = await resumeFile.text();
+    // } else if (resumeFile.type === "application/pdf") {
+    //   resumeText = await extractTextFromPDF(resumeFile);
+    // } else {
+    //   return NextResponse.json(
+    //     { error: "Unsupported file type. Please upload a PDF or text file." },
+    //     { status: 400 },
+    //   );
+    // }
 
-    // Clean and limit resume text length
-    const cleanResume = resumeText.replace(/\s+/g, " ").trim();
+    // // Clean and limit resume text length
+    // const cleanResume = resumeText.replace(/\s+/g, " ").trim();
 
     const cleanJobDescription = job_description.replace(/\s+/g, " ").trim();
-
-    // Build AI prompt
-    const prompt = coverLetterPrompt({ resume: cleanResume, job_description });
+    // Build AI prompt (must match coverLetterJsonSchema / Ollama `format`)
+    const prompt = coverLetterPrompt({
+      job_description: cleanJobDescription,
+      excerpts,
+      candidate_name,
+    });
 
     // --- HUGGING FACE CALL ---
     const apiKey = process.env.HUGGINGFACE_API_KEY as string;
 
     if (!apiKey || apiKey === "your_api_key_here") {
       console.log(
-        "⚠️ No valid Hugging Face API key found, using fallback generator"
+        "⚠️ No valid Hugging Face API key found, using fallback generator",
       );
-      const fallback = generateFallbackCoverLetter(
-        cleanResume,
-        cleanJobDescription
-      );
-      return NextResponse.json({ coverLetter: fallback });
+      // const fallback = generateFallbackCoverLetter(
+      //   cleanResume,
+      //   cleanJobDescription,
+      // );
+      return NextResponse.json({ coverLetter: "fallback cover letter" });
     }
 
     const result = await ollama.chat({
       model: "qwen3:latest",
       messages: [{ role: "user", content: prompt }],
-      format: zodToJsonSchema(CoverLetterSchema), // optional structured output
+      format: coverLetterJsonSchema,
     });
 
-    const data = CoverLetterSchema.parse(
-      JSON.parse(result.message.content)
+    const rawContent = result.message.content?.trim();
+    if (!rawContent) {
+      throw new Error("Ollama returned empty message content");
+    }
+
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(rawContent);
+    } catch {
+      throw new Error(
+        "Ollama returned non-JSON content. First 200 chars: " +
+          rawContent.slice(0, 200),
+      );
+    }
+
+    const parsed = coverLetterOutputSchema.parse(
+      parsedJson,
     ) as CoverLetterResponse;
+    const data = sanitizeCoverLetterOutput(parsed, candidate_name);
 
     return NextResponse.json({
       data: data,
@@ -150,7 +174,7 @@ export async function POST(request: NextRequest) {
         coverLetter:
           "An error occurred while generating the cover letter. Please try again later.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -158,7 +182,7 @@ export async function POST(request: NextRequest) {
 // --- FALLBACK GENERATOR ---
 function generateFallbackCoverLetter(
   resume: string,
-  job_description: string
+  job_description: string,
 ): string {
   const nameLine = resume.split("\n")[0] || "Dear Hiring Manager";
   const email = resume.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i)?.[0];

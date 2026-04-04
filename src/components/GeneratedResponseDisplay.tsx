@@ -66,7 +66,7 @@ export function GeneratedResponseDisplay({
             // Text before bold tag
             if (match.index > lastIndex) {
               runs.push(
-                new TextRun({ text: remaining.slice(lastIndex, match.index) })
+                new TextRun({ text: remaining.slice(lastIndex, match.index) }),
               );
             }
 
@@ -131,7 +131,7 @@ export function GeneratedResponseDisplay({
                     month: "long",
                     day: "numeric",
                     year: "numeric",
-                  })
+                  }),
                 ),
               ],
               spacing: { after: 400 },
@@ -149,89 +149,97 @@ export function GeneratedResponseDisplay({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <FileText className="w-5 h-5" />
+    <div className="flex h-full min-h-[24rem] flex-col rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6 shadow-[0_0_40px_-16px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-100">
+          <FileText className="h-5 w-5 text-emerald-400/90" aria-hidden />
           {`Generated ${type}`}
         </h2>
 
         {generatedResponse && !isResponseGenerating && (
-          <div className="flex gap-2 text-gray-700">
+          <div className="flex flex-wrap gap-2 text-zinc-200">
             {addToNotion && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   addToNotion();
                 }}
-                className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+                className="flex cursor-pointer items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-sm transition hover:border-emerald-500/40 hover:bg-zinc-800"
               >
-                Add Job To Notion
+                Add job to Notion
               </button>
             )}
             <button
+              type="button"
               onClick={handleCopy}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-sm transition hover:border-emerald-500/40 hover:bg-zinc-800"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="h-4 w-4" />
               {copied ? "Copied!" : "Copy"}
             </button>
             <button
+              type="button"
               onClick={handleDownload}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-sm transition hover:border-emerald-500/40 hover:bg-zinc-800"
             >
-              <Download className="w-4 h-4" />
+              <Download className="h-4 w-4" />
               Download
             </button>
           </div>
         )}
       </div>
 
-      <div className="overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {isResponseGenerating ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <Loader2 className="w-8 h-8 animate-spin mb-4" />
-            <p>{`Generating your personalized ${type.toLowerCase()} letter...`}</p>
-            <p className="text-sm mt-2">This may take a few moments</p>
+          <div className="flex h-full min-h-[16rem] flex-col items-center justify-center text-zinc-400">
+            <Loader2 className="mb-4 h-8 w-8 animate-spin text-emerald-400" />
+            <p>{`Generating your personalized ${type.toLowerCase()}…`}</p>
+            <p className="mt-2 text-sm text-zinc-500">
+              This may take a few moments
+            </p>
           </div>
         ) : generatedResponse ? (
-          <div className="prose prose-sm max-w-none">
-            <ReactQuill
-              value={generatedResponse}
-              onChange={setGeneratedResponse}
-              className=" text-gray-700"
-              placeholder="Edit your cover letter..."
-              modules={{
-                toolbar: [
-                  ["bold", "italic", "underline"],
-                  [{ list: "ordered" }, { list: "bullet" }],
-                  ["link"],
-                  ["clean"],
-                ],
-              }}
-              theme="snow"
-            />
+          <div className="prose prose-sm max-w-none prose-invert">
+            <div className="quill-dark overflow-hidden rounded-xl border border-zinc-800">
+              <ReactQuill
+                value={generatedResponse}
+                onChange={setGeneratedResponse}
+                className="text-zinc-200"
+                placeholder="Edit your cover letter..."
+                modules={{
+                  toolbar: [
+                    ["bold", "italic", "underline"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    ["link"],
+                    ["clean"],
+                  ],
+                }}
+                theme="snow"
+              />
+            </div>
 
             {type === "Cover Letter" && (
               <button
+                type="button"
                 onClick={handleCopy}
-                className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors cursor-pointer mx-auto mt-4 text-gray-700"
+                className="mx-auto mt-4 flex cursor-pointer items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-emerald-500/40 hover:bg-zinc-800"
               >
-                <RiNotionFill className="w-4 h-4" />
+                <RiNotionFill className="h-4 w-4" />
                 Add to Notion
               </button>
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <FileText className="w-16 h-16 mb-4" />
-            <p className="text-lg font-medium">
-              {`Your ${type.toLocaleLowerCase()} letter will appear here`}
+          <div className="flex h-full min-h-[16rem] flex-col items-center justify-center text-zinc-500">
+            <FileText className="mb-4 h-16 w-16 text-zinc-600" aria-hidden />
+            <p className="text-lg font-medium text-zinc-300">
+              {`Your ${type.toLocaleLowerCase()} will appear here`}
             </p>
             {type === "Cover Letter" && (
-              <p className="text-sm mt-2 text-center">
+              <p className="mt-2 max-w-sm text-center text-sm text-zinc-500">
                 Upload your resume and enter a job description, then click
-                &ldquo;Generate Cover Letter&rdquo;
+                &ldquo;Generate cover letter&rdquo;
               </p>
             )}
           </div>

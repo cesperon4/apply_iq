@@ -63,7 +63,7 @@ export async function GET() {
     if (!databaseId) {
       return NextResponse.json(
         { success: false, error: "Missing NOTION_DATABASE_ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -92,13 +92,12 @@ export async function GET() {
     } while (cursor);
 
     const formattedResults: unknown[] = pages.map((result) =>
-      formatPage(result as PageObjectResponse)
+      formatPage(result as PageObjectResponse),
     );
-
     const job_results: JobRecord[] = formattedResults.filter(isJobData);
-
     const tech_counts = getTechStackCounts(job_results);
 
+    console.log("tech_counts: ", tech_counts);
     return NextResponse.json({
       success: true,
       data: { job_results, tech_counts: tech_counts },
@@ -108,13 +107,13 @@ export async function GET() {
     if (error instanceof Error) {
       return NextResponse.json(
         { success: false, error: error.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Unknown error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -132,8 +131,6 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     const cleanedCoverLetter = stripHtml(coverLetter);
-
-    console.log("tech stack: ", tech_stack);
 
     // const stripped = str.replace(/,/g, ""); // remove all commas
 
@@ -191,7 +188,7 @@ export async function POST(req: NextRequest) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       { success: false, error: message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

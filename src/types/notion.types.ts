@@ -16,6 +16,20 @@ export type tech = {
   name: string;
 };
 
+/** Args for querying the applied-jobs database. */
+export type AppliedJobsArgs = {
+  /** `0` = return all rows (paginate until done). `> 0` = at most N rows after sort (single query). */
+  limit: number;
+  /** Must match the Notion database property name exactly (e.g. `date_applied`). */
+  company?: string;
+  sort_property?: string;
+  sort_direction?: string;
+  /** For tech-occurrence queries: filter to this technology (e.g. "TypeScript"). */
+  technology?: string;
+};
+
+export type GetTechCountArgs = AppliedJobsArgs;
+
 export type JobRecord = NotionRecord & {
   job_description: string;
   company: string;
