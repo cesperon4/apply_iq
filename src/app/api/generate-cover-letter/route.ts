@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 // import { InferenceClient } from "@huggingface/inference";
 import { coverLetterPrompt } from "@/lib/prompts/cover-letter-prompt";
 
-import ollama from "ollama";
-
+import { ollama } from "@/lib/clients/ollama";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
@@ -35,7 +34,7 @@ async function extractTextFromPDF(file: File): Promise<string> {
     if (!extractedText) throw new Error("No text found in PDF");
 
     console.log(
-      `✅ Extracted ${extractedText.length} characters from ${file.name}`
+      `✅ Extracted ${extractedText.length} characters from ${file.name}`,
     );
     return extractedText;
   } catch (error) {
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (!resumeFile || !job_description) {
       return NextResponse.json(
         { error: "Resume and job description are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json(
         { error: "Unsupported file type. Please upload a PDF or text file." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -93,11 +92,11 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey || apiKey === "your_api_key_here") {
       console.log(
-        "⚠️ No valid Hugging Face API key found, using fallback generator"
+        "⚠️ No valid Hugging Face API key found, using fallback generator",
       );
       const fallback = generateFallbackCoverLetter(
         cleanResume,
-        cleanJobDescription
+        cleanJobDescription,
       );
       return NextResponse.json({ coverLetter: fallback });
     }
@@ -109,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
 
     const data = CoverLetterSchema.parse(
-      JSON.parse(result.message.content)
+      JSON.parse(result.message.content),
     ) as CoverLetterResponse;
 
     return NextResponse.json({
@@ -150,7 +149,7 @@ export async function POST(request: NextRequest) {
         coverLetter:
           "An error occurred while generating the cover letter. Please try again later.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -158,7 +157,7 @@ export async function POST(request: NextRequest) {
 // --- FALLBACK GENERATOR ---
 function generateFallbackCoverLetter(
   resume: string,
-  job_description: string
+  job_description: string,
 ): string {
   const nameLine = resume.split("\n")[0] || "Dear Hiring Manager";
   const email = resume.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i)?.[0];
